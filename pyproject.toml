@@ -8,6 +8,10 @@ authors = ["Phillip Lord"]
 python = "^3.6"
 canvasapi = "^2.0.0"
 click = "^7.1.2"
+appdirs = "^1.4.4"
+toml = "^0.10.1"
+dpath = "^2.0.1"
+stringcase = "^1.2.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

@@ -1,29 +1,52 @@
-def user_config_dir(appname, roaming=True):
-    """Return full path to the user-specific config dir for this application.
+import appdirs
+import click
+import dpath.util
+import functools
+import os
+import toml
 
-        "appname" is the name of application.
-            If None, just the system directory is returned.
-        "roaming" (boolean, default True) can be set False to not use the
-            Windows roaming appdata directory. That means that for users on a
-            Windows network setup for roaming profiles, this user data will be
-            sync'd on login. See
-            <http://technet.microsoft.com/en-us/library/cc766489(WS.10).aspx>
-            for a discussion of issues.
+from canvasapi import Canvas
 
-    Typical user data directories are:
-        macOS:                  same as user_data_dir
-        Unix:                   ~/.config/<AppName>
-        Win *:                  same as user_data_dir
+def fetch_config(files):
+    files = [toml.load(f) for f in files if os.path.exists(f)]
+    ## merge here does a deep merge, otherwise one section will overload another
+    return functools.reduce(dpath.util.merge, files)
 
-    For Unix, we follow the XDG spec and support $XDG_CONFIG_HOME.
-    That means, by default "~/.config/<AppName>".
-    """
-    if WINDOWS:
-        path = user_data_dir(appname, roaming=roaming)
-    elif sys.platform == "darwin":
-        path = user_data_dir(appname)
-    else:
-        path = os.getenv("XDG_CONFIG_HOME", expanduser("~/.config"))
-        path = os.path.join(path, appname)
+def config_config():
+    return fetch_config(
+        [
+            appdirs.user_config_dir("tent-pole") + "/tent-pole.toml",
+            "./tent-pole.toml"
+        ]
+    )
 
-    return path
+def config_course():
+    return dpath.util.get(CONFIG, "general/course")
+
+def config_api_key():
+    return dpath.util.get(CONFIG, "general/api_key")
+
+def config_canvas():
+    return Canvas(API_URL, config_api_key())
+
+
+API_URL="https://ncl.instructure.com"
+CONFIG = config_config()
+
+## CLI
+
+@click.group()
+def config():
+    pass
+
+@config.command()
+def api_key():
+    print(config_api_key(CONFIG))
+
+@config.command()
+def dump():
+    print(CONFIG)
+
+@config.command()
+def course():
+    print(config_course(CONFIG))
