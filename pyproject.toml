@@ -13,9 +13,14 @@ toml = "^0.10.1"
 dpath = "^2.0.1"
 stringcase = "^1.2.0"
 
+[tool.poetry.scripts]
+tent-pole = "tent_pole.main:main"
+
+
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
 
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
+
