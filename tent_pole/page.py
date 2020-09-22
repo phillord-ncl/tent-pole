@@ -89,3 +89,4 @@ def push(filename):
             "body": body
         }
     )
+    print("Pushed:{} as {}".format(filename, canvasname))
