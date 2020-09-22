@@ -23,6 +23,9 @@ def config_config():
 def config_course():
     return dpath.util.get(CONFIG, "general/course")
 
+def config_course_obj():
+    return config_canvas().get_course(config_course())
+
 def config_api_key():
     return dpath.util.get(CONFIG, "general/api_key")
 

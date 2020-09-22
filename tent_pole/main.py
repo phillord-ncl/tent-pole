@@ -27,5 +27,6 @@ def main(course):
         dpath.util.new(config.CONFIG, "general/course", "temp")
         dpath.util.set(config.CONFIG, "general/course", course)
 
-main.add_command(page.page)
 main.add_command(config.config)
+main.add_command(file.file)
+main.add_command(page.page)
