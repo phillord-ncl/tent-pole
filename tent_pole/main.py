@@ -5,6 +5,7 @@ import sys
 
 
 from . import config
+from . import course
 from . import file
 from . import page
 
@@ -28,5 +29,6 @@ def main(course):
         dpath.util.set(config.CONFIG, "general/course", course)
 
 main.add_command(config.config)
+main.add_command(course.course)
 main.add_command(file.file)
 main.add_command(page.page)
