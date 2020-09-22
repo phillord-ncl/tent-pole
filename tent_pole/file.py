@@ -13,6 +13,17 @@ def __find_file(filename, course):
         if f.filename == filename:
             return f
 
+def __data(filename, course):
+    canvasfile = __find_file(filename,course)
+    return {
+        "uuid": canvasfile.uuid,
+        "content-type": canvasfile.__dict__["content-type"],
+        "id": canvasfile.id,
+        "course": course.id,
+        "filename": canvasfile.filename,
+    }
+
+
 ## CLI
 @click.group()
 def file():
@@ -21,17 +32,14 @@ def file():
 @file.command(help="""Return some information about a file.""")
 @click.argument("filename")
 def data(filename):
-    course=config.config_course_obj()
-    canvasfile = __find_file(filename,course)
-    data = {
-        "uuid": canvasfile.uuid,
-        "content-type": canvasfile.__dict__["content-type"],
-        "id": canvasfile.id,
-        "course": course.id,
-        "filename": canvasfile.filename,
-    }
+    data = __data(filename, course=config.config_course_obj())
     print(toml.dumps(data))
 
+@file.command(help="Dump information to a local file.")
+@click.argument("filename")
+def dump(filename):
+    with open(filename + ".tpf", "w") as fh:
+        toml.dump(__data(filename, course=config.config_course_obj()),fh)
 
 @file.command(help="Create or Update a file")
 @click.argument("filename")

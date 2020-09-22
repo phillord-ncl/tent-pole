@@ -2,6 +2,7 @@ import canvasapi
 import click
 import os
 import stringcase
+import toml
 
 from . import config
 
@@ -64,6 +65,12 @@ def create(filename):
 
     return __create_page(course, canvastitle)
 
+@page.command(help="Dump information to a local file.")
+@click.argument("filename")
+def dump(filename):
+    with open(os.path.splitext(filename)[0] + ".tpp", "w") as fh:
+        ## Nothing to say at the moment
+        toml.dump({},fh)
 
 @page.command(help="Update an existing page that exists")
 @click.argument("filename")
