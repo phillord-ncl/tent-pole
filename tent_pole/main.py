@@ -21,12 +21,18 @@ handler.setFormatter(formatter)
 logger.setLevel(logging.DEBUG)
 
 ## CLI Follows
+def __course(courseidentifier):
+   return course.course_by_guess(courseidentifier)
+
 @click.group()
 @click.option("-c","--course", "course", help="Course ID")
 def main(course):
     if course:
+        ## __course is just to avoid the name clash with the local variable.
+        ## The local variable is user facing
+        courseobj = __course(course)
         dpath.util.new(config.CONFIG, "general/course", "temp")
-        dpath.util.set(config.CONFIG, "general/course", course)
+        dpath.util.set(config.CONFIG, "general/course", courseobj.id)
 
 main.add_command(config.config)
 main.add_command(course.course)
