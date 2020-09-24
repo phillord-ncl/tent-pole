@@ -21,6 +21,7 @@ def __data(filename, course):
         "id": canvasfile.id,
         "course": course.id,
         "filename": canvasfile.filename,
+        "media_entry_id": canvasfile.media_entry_id
     }
 
 
@@ -47,4 +48,3 @@ def push(filename):
     course.course_obj().upload(filename)
 
 
-##  "id": 3156340,
