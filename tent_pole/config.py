@@ -7,6 +7,12 @@ import toml
 
 from canvasapi import Canvas
 
+def get_maybe(config,key):
+    try:
+        return dpath.util.get(config, key)
+    except KeyError:
+        return None
+
 def fetch_config(files):
     files = [toml.load(f) for f in files if os.path.exists(f)]
     ## merge here does a deep merge, otherwise one section will overload another
@@ -21,10 +27,19 @@ def config_config():
     )
 
 def config_course():
-    return dpath.util.get(CONFIG, "general/course")
+    return (
+        get_maybe(CONFIG, "course/id") or
+        get_maybe(CONFIG, "course/identifier")
+    )
 
-def config_course_obj():
-    return config_canvas().get_course(config_course())
+def config_module():
+    return (
+        get_maybe(CONFIG, "module/id") or
+        get_maybe(CONFIG, "module/identifier")
+    )
+
+def config_module_items():
+    return dpath.util.get(CONFIG, "module/items")
 
 def config_api_key():
     return dpath.util.get(CONFIG, "general/api_key")

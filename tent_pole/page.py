@@ -5,8 +5,9 @@ import stringcase
 import toml
 
 from . import config
+from . import course
 
-def __canvasname_from_path(filename):
+def canvasname_from_path(filename):
     return os.path.splitext(
         os.path.basename(filename)
     )[0]
@@ -57,7 +58,7 @@ def page():
 @click.argument("filename")
 def create(filename):
     course = config.config_canvas().get_course(config.config_course())
-    canvasname = __canvasname_from_path(filename)
+    canvasname = canvasname_from_path(filename)
     canvastitle = __canvastitle_from_canvasname(canvasname)
 
     if __page_exists(course, canvasname):
@@ -77,7 +78,7 @@ def dump(filename):
 def update(filename):
     with open(filename) as fh: body = fh.read()
     course = config.config_canvas().get_course(config.config_course())
-    page = course.get_page(__canvasname_from_path(filename))
+    page = course.get_page(canvasname_from_path(filename))
     page.edit(
         wiki_page={
             "body":body
@@ -88,9 +89,9 @@ def update(filename):
 @click.argument("filename")
 def push(filename):
     with open(filename) as fh: body = fh.read()
-    course = config.config_canvas().get_course(config.config_course())
-    canvasname = __canvasname_from_path(filename)
-    page = __get_create_page(course, canvasname)
+    courseobj = course.course_obj()
+    canvasname = canvasname_from_path(filename)
+    page = __get_create_page(courseobj, canvasname)
     page.edit (
         wiki_page = {
             "body": body

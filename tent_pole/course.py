@@ -18,6 +18,10 @@ def course_by_guess(courseidentifier):
         course_by_name(courseidentifier)
     )
 
+## TODO Move to course
+def course_obj():
+    return course_by_guess(config.config_course())
+
 ## CLI
 @click.group()
 def course():
