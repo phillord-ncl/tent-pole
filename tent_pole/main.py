@@ -26,7 +26,7 @@ logger.setLevel(logging.DEBUG)
 def main(course):
     if course:
         dpath.util.new(config.CONFIG, "course/identifier", "temp")
-        dpath.util.set(config.CONFIG, "course/identifier", courseobj.id)
+        dpath.util.set(config.CONFIG, "course/identifier", course)
 
 main.add_command(config.config)
 main.add_command(course.course)
