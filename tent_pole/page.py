@@ -40,6 +40,26 @@ def __get_create_page(course, canvasname):
 
     return course.get_page(canvasname)
 
+def page_by_title(pagetitle):
+    try:
+        return next(page for page
+                in course.course_obj().get_pages()
+                if pagetitle in page.title)
+    except:
+        return None
+
+def page_by_guess(pageurl):
+    return (
+        " " not in pageurl
+        and
+        config.config_canvas().get_course(config.config_course()).get_page(pageurl)
+        or
+        page_by_title(pageurl)
+    )
+
+def page_obj():
+    return page_by_guess(config.config_page())
+
 ## Errors
 class PageExistsError(Exception):
     def __init__(self, course, canvastitle, message="Page Exists"):
@@ -53,6 +73,12 @@ class PageExistsError(Exception):
 @click.group()
 def page():
     pass
+
+@page.command(help="Return information about a page")
+@click.argument("pageurl")
+def data(pageurl):
+    page = page_by_guess(pageurl)
+    print(page)
 
 @page.command(help="Create a page that does not exist")
 @click.argument("filename")
