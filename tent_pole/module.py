@@ -119,11 +119,13 @@ def reorder():
     for item in required_items:
         itemtype = item.get("type", "Page")
         if itemtype=="Page":
+            print("Creating page")
+            print(page.canvasname_from_path(item['id']))
             module.create_module_item(
                 module_item = {
                     "type": "Page",
                     "page_url": page.canvasname_from_path(item['id']),
-                    "indent": item.get("indent", 0)
+                    "indent": str(item.get("indent", 0))
                 }
             )
         elif itemtype=="Quiz":
