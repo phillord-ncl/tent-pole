@@ -10,7 +10,7 @@ from . import course
 def canvasname_from_path(filename):
     return os.path.splitext(
         os.path.basename(filename)
-    )[0]
+    )[0].replace("_", "-")
 
 def __canvastitle_from_canvasname(canvasname):
     return stringcase.titlecase(canvasname)
