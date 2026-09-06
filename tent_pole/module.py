@@ -119,8 +119,8 @@ def reorder():
     for item in required_items:
         itemtype = item.get("type", "Page")
         if itemtype=="Page":
-            print("Creating page")
-            print(page.canvasname_from_path(item['id']))
+            print("Creating page:", page.canvasname_from_path(item['id']))
+
             module.create_module_item(
                 module_item = {
                     "type": "Page",
