@@ -47,6 +47,21 @@ def config_api_key():
 def config_canvas():
     return Canvas(API_URL, config_api_key())
 
+def config_test_api_key():
+    return get_maybe(CONFIG, "dev/test_api_key") or config_api_key()
+
+def config_test_course_id():
+    return get_maybe(CONFIG, "dev/test_course_id")
+
+def config_test_api_url():
+    return get_maybe(CONFIG, "dev/test_api_url")
+
+def config_test_canvas():
+    ## Deliberately no fallback to the production API_URL: tests must
+    ## have an explicit target (e.g. beta) so a missing config value
+    ## can never silently mean "run against the live instance".
+    return Canvas(config_test_api_url(), config_test_api_key())
+
 
 API_URL="https://ncl.instructure.com"
 CONFIG = config_config()

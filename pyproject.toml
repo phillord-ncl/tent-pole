@@ -5,7 +5,7 @@ description = ""
 authors = ["Phillip Lord"]
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = ">=3.9,<4.0"
 canvasapi = "^2.0.0"
 click = "^7.1.2"
 appdirs = "^1.4.4"
@@ -17,8 +17,14 @@ stringcase = "^1.2.0"
 tent-pole = "tent_pole.main:main"
 
 
-[tool.poetry.dev-dependencies]
-pytest = "^5.2"
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3"
+
+[tool.pytest.ini_options]
+markers = [
+    "canvas: requires network access and a configured Canvas sandbox course",
+]
+addopts = "-m 'not canvas'"
 
 [build-system]
 requires = ["poetry>=0.12"]

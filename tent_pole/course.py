@@ -2,27 +2,73 @@ import click
 
 from . import config
 
-def __get_courses():
-    return config.config_canvas().get_courses()
+def __get_courses(canvas=None):
+    return (canvas or config.config_canvas()).get_courses()
 
 
-def course_by_name(coursename):
-    return next(course for course in __get_courses()
-                if coursename in course.name)
+def course_by_name(coursename, canvas=None):
+    return next(
+        (course for course in __get_courses(canvas)
+         if coursename in course.name),
+        None
+    )
 
-def course_by_code(coursecode):
-    return next(course for course in __get_courses()
-                if coursecode == course.course_code)
+def course_by_code(coursecode, canvas=None):
+    return next(
+        (course for course in __get_courses(canvas)
+         if coursecode == course.course_code),
+        None
+    )
 
-def course_by_guess(courseidentifier):
+class AmbiguousCourseIdentifier(Exception):
+    def __init__(self, identifier, matches):
+        self.identifier = identifier
+        self.matches = matches
+        super().__init__(
+            "{!r} matched {} courses: {}".format(
+                identifier,
+                len(matches),
+                ", ".join(
+                    "{} ({})".format(
+                        getattr(c, "name", "?"), getattr(c, "id", "?")
+                    )
+                    for c in matches
+                ),
+            )
+        )
+
+def course_by_exact(courseidentifier, canvas=None):
+    """Like course_by_guess, but never guesses: an exact match on
+    course_code or name only, and raises rather than silently picking one
+    course out of several on an ambiguous identifier. Intended for
+    config-driven lookups (e.g. [dev] test_course_id) where certainty
+    matters more than typing convenience -- see claude_redesign.md."""
+    canvas = canvas or config.config_canvas()
+
+    if str(courseidentifier).isnumeric():
+        return canvas.get_course(courseidentifier)
+
+    matches = [
+        c for c in __get_courses(canvas)
+        if courseidentifier == getattr(c, "course_code", None)
+        or courseidentifier == getattr(c, "name", None)
+    ]
+
+    if len(matches) > 1:
+        raise AmbiguousCourseIdentifier(courseidentifier, matches)
+
+    return matches[0] if matches else None
+
+def course_by_guess(courseidentifier, canvas=None):
+    canvas = canvas or config.config_canvas()
     return (
-        courseidentifier.isnumeric()
+        str(courseidentifier).isnumeric()
         and
-        config.config_canvas().get_course(courseidentifier)
+        canvas.get_course(courseidentifier)
         or
-        course_by_code(courseidentifier)
+        course_by_code(courseidentifier, canvas)
         or
-        course_by_name(courseidentifier)
+        course_by_name(courseidentifier, canvas)
     )
 
 def course_obj():
