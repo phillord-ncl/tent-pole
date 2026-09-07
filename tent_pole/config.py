@@ -112,7 +112,7 @@ def config():
 
 @config.command()
 def api_key():
-    print(config_api_key(CONFIG))
+    print(config_api_key())
 
 @config.command()
 def dump():
@@ -120,4 +120,4 @@ def dump():
 
 @config.command()
 def course():
-    print(config_course(CONFIG))
+    print(config_course())

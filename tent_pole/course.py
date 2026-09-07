@@ -1,3 +1,4 @@
+import canvasapi
 import click
 
 from . import config
@@ -7,16 +8,20 @@ def __get_courses(canvas=None):
 
 
 def course_by_name(coursename, canvas=None):
+    ## getattr defaults, not course.name directly: a Canvas
+    ## restricted-access course is returned by get_courses() as a stub
+    ## with only {id, access_restricted_by_date}, no name -- confirmed
+    ## on a real account, see course_by_exact for the same pattern.
     return next(
         (course for course in __get_courses(canvas)
-         if coursename in course.name),
+         if coursename in getattr(course, "name", "")),
         None
     )
 
 def course_by_code(coursecode, canvas=None):
     return next(
         (course for course in __get_courses(canvas)
-         if coursecode == course.course_code),
+         if coursecode == getattr(course, "course_code", None)),
         None
     )
 
@@ -61,13 +66,13 @@ def course_by_exact(courseidentifier, canvas=None):
 
 def course_by_guess(courseidentifier, canvas=None):
     canvas = canvas or config.config_canvas()
+    if str(courseidentifier).isnumeric():
+        try:
+            return canvas.get_course(courseidentifier)
+        except canvasapi.exceptions.ResourceDoesNotExist:
+            pass
     return (
-        str(courseidentifier).isnumeric()
-        and
-        canvas.get_course(courseidentifier)
-        or
-        course_by_code(courseidentifier, canvas)
-        or
+        course_by_code(courseidentifier, canvas) or
         course_by_name(courseidentifier, canvas)
     )
 

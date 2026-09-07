@@ -1,6 +1,7 @@
 import os
 
 import toml
+from click.testing import CliRunner
 
 from tent_pole import config
 
@@ -153,3 +154,28 @@ def test_config_api_url_uses_configured_value(monkeypatch):
         config, "CONFIG", {"general": {"api_url": "https://ncl.beta.instructure.com"}}
     )
     assert config.config_api_url() == "https://ncl.beta.instructure.com"
+
+
+## CLI commands -- regression tests: api-key and course used to crash with
+## "takes 0 positional arguments but 1 was given" (called as
+## config_api_key(CONFIG)/config_course(CONFIG), but both functions take
+## no arguments and read the module-level CONFIG directly).
+
+def test_cli_api_key_does_not_crash(monkeypatch):
+    monkeypatch.setattr(config, "CONFIG", {"general": {"api_key": "secret"}})
+    result = CliRunner().invoke(config.config, ["api-key"])
+    assert result.exit_code == 0, result.output
+    assert "secret" in result.output
+
+
+def test_cli_course_does_not_crash(monkeypatch):
+    monkeypatch.setattr(config, "CONFIG", {"course": {"id": "12345"}})
+    result = CliRunner().invoke(config.config, ["course"])
+    assert result.exit_code == 0, result.output
+    assert "12345" in result.output
+
+
+def test_cli_dump_does_not_crash(monkeypatch):
+    monkeypatch.setattr(config, "CONFIG", {"course": {"id": "12345"}})
+    result = CliRunner().invoke(config.config, ["dump"])
+    assert result.exit_code == 0, result.output

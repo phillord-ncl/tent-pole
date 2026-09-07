@@ -1,3 +1,4 @@
+import canvasapi.exceptions
 import pytest
 
 from tent_pole import course
@@ -26,7 +27,10 @@ class FakeCanvas:
         return self._courses
 
     def get_course(self, course_id):
-        return next(c for c in self._courses if str(c.id) == str(course_id))
+        try:
+            return next(c for c in self._courses if str(c.id) == str(course_id))
+        except StopIteration:
+            raise canvasapi.exceptions.ResourceDoesNotExist("not found")
 
 
 def make_canvas():
@@ -129,4 +133,45 @@ def test_course_by_exact_skips_restricted_access_course_without_crashing():
         FakeCourse(16807, "npl25 Personal Sandbox", "npl25 Personal Sandbox"),
     ])
     found = course.course_by_exact("npl25 Personal Sandbox", canvas=canvas)
+    assert found.id == 16807
+
+
+def test_course_by_name_skips_restricted_access_course_without_crashing():
+    """Same regression as course_by_exact's, but for the general
+    course_by_guess codepath (course_by_name/course_by_code), which used
+    direct .name/.course_code attribute access with no getattr default."""
+    canvas = FakeCanvas([
+        RestrictedFakeCourse(32443),
+        FakeCourse(16807, "npl25 Personal Sandbox", "npl25 Personal Sandbox"),
+    ])
+    found = course.course_by_name("Personal Sandbox", canvas=canvas)
+    assert found.id == 16807
+
+
+def test_course_by_code_skips_restricted_access_course_without_crashing():
+    canvas = FakeCanvas([
+        RestrictedFakeCourse(32443),
+        FakeCourse(16807, "npl25 Personal Sandbox", "npl25 Personal Sandbox"),
+    ])
+    found = course.course_by_code("npl25 Personal Sandbox", canvas=canvas)
+    assert found.id == 16807
+
+
+def test_course_by_guess_numeric_miss_returns_none_without_crashing():
+    """Regression test: course_by_guess's numeric branch used to call
+    canvas.get_course() with no exception handling, so an id that just
+    happens not to exist crashed with canvasapi's raw
+    ResourceDoesNotExist instead of returning None like any other miss."""
+    canvas = make_canvas()
+    assert course.course_by_guess("99999999", canvas=canvas) is None
+
+
+def test_course_by_guess_falls_back_when_numeric_id_not_found_but_matches_a_code():
+    """The full fallback chain: "12345" isn't a valid course id, but it
+    happens to be some other course's course_code -- must still find it,
+    not just fail to crash."""
+    canvas = FakeCanvas([
+        FakeCourse(16807, "Some Course", "12345"),
+    ])
+    found = course.course_by_guess("12345", canvas=canvas)
     assert found.id == 16807

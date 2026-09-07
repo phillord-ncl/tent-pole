@@ -1,3 +1,5 @@
+import canvasapi.exceptions
+
 from tent_pole import config, page
 
 
@@ -36,6 +38,84 @@ class FakeCourseForPage:
 def write_local_file(path, content=b"<p>hello</p>"):
     path.write_bytes(content)
     return str(path)
+
+
+## page_by_title / page_by_guess
+
+class FakeCourseForLookup:
+    def __init__(self, pages=None, get_page_result=None, get_page_raises=None):
+        self._pages = pages or []
+        self._get_page_result = get_page_result
+        self._get_page_raises = get_page_raises
+
+    def get_pages(self):
+        return self._pages
+
+    def get_page(self, url):
+        if self._get_page_raises:
+            raise self._get_page_raises
+        return self._get_page_result
+
+
+class FakeCanvasForLookup:
+    def __init__(self, fake_course):
+        self._fake_course = fake_course
+
+    def get_course(self, course_id):
+        return self._fake_course
+
+
+def test_page_by_title_finds_matching_title(monkeypatch):
+    target = FakePage(title="My Great Page")
+    fake_course = FakeCourseForLookup(pages=[FakePage(title="Other"), target])
+    monkeypatch.setattr(page.course, "course_obj", lambda: fake_course)
+
+    assert page.page_by_title("Great") is target
+
+
+def test_page_by_title_returns_none_when_not_found(monkeypatch):
+    """Regression test: page_by_title used to have a bare `except:`,
+    catching everything (not just the expected StopIteration when
+    next() finds nothing) and silently returning None either way --
+    narrowed so a genuine bug isn't masked as "page not found"."""
+    fake_course = FakeCourseForLookup(pages=[FakePage(title="Other")])
+    monkeypatch.setattr(page.course, "course_obj", lambda: fake_course)
+
+    assert page.page_by_title("does not exist") is None
+
+
+def test_page_by_guess_uses_get_page_directly_when_it_succeeds(monkeypatch):
+    target = FakePage(title="Direct Hit")
+    fake_course = FakeCourseForLookup(get_page_result=target)
+    monkeypatch.setattr(config, "config_canvas", lambda: FakeCanvasForLookup(fake_course))
+    monkeypatch.setattr(config, "config_course", lambda: "16807")
+
+    assert page.page_by_guess("some-url") is target
+
+
+def test_page_by_guess_falls_back_to_title_when_get_page_raises_not_found(monkeypatch):
+    """Regression test: page_by_guess's "get_page(...) or
+    page_by_title(...)" chain only ever fell through on a falsy return
+    value -- a real 404 (ResourceDoesNotExist) crashed instead of
+    trying the title-search fallback the "or" clearly intended."""
+    target = FakePage(title="Found By Title")
+    fake_course = FakeCourseForLookup(
+        pages=[target],
+        get_page_raises=canvasapi.exceptions.ResourceDoesNotExist("not found"),
+    )
+    monkeypatch.setattr(config, "config_canvas", lambda: FakeCanvasForLookup(fake_course))
+    monkeypatch.setattr(config, "config_course", lambda: "16807")
+    monkeypatch.setattr(page.course, "course_obj", lambda: fake_course)
+
+    assert page.page_by_guess("Found") is target
+
+
+def test_page_by_guess_uses_title_search_when_url_has_a_space(monkeypatch):
+    target = FakePage(title="Has A Space In It")
+    fake_course = FakeCourseForLookup(pages=[target])
+    monkeypatch.setattr(page.course, "course_obj", lambda: fake_course)
+
+    assert page.page_by_guess("Has A Space") is target
 
 
 def test_page_metadata_includes_hash_and_editor(tmp_path):

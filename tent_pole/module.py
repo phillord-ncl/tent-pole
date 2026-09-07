@@ -1,3 +1,4 @@
+import canvasapi
 import click
 
 from . import config
@@ -8,19 +9,17 @@ def module_by_name(modulename):
     try:
         return next(module for module
                 in course.course_obj().get_modules()
-                if modulename in module.name)
-    except:
+                if modulename in getattr(module, "name", ""))
+    except StopIteration:
         return None
 
 def module_by_guess(moduleidentifier):
-    print(config.config_course())
-    return (
-        moduleidentifier.isnumeric()
-        and
-        config.config_canvas().get_course(config.config_course()).get_module(moduleidentifier)
-        or
-        module_by_name(moduleidentifier)
-    )
+    if moduleidentifier.isnumeric():
+        try:
+            return config.config_canvas().get_course(config.config_course()).get_module(moduleidentifier)
+        except canvasapi.exceptions.ResourceDoesNotExist:
+            pass
+    return module_by_name(moduleidentifier)
 
 def module_obj():
     return module_by_guess(config.config_module())

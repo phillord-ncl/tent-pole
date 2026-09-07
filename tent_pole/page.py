@@ -47,17 +47,16 @@ def page_by_title(pagetitle):
         return next(page for page
                 in course.course_obj().get_pages()
                 if pagetitle in page.title)
-    except:
+    except StopIteration:
         return None
 
 def page_by_guess(pageurl):
-    return (
-        " " not in pageurl
-        and
-        config.config_canvas().get_course(config.config_course()).get_page(pageurl)
-        or
-        page_by_title(pageurl)
-    )
+    if " " not in pageurl:
+        try:
+            return config.config_canvas().get_course(config.config_course()).get_page(pageurl)
+        except canvasapi.exceptions.ResourceDoesNotExist:
+            pass
+    return page_by_title(pageurl)
 
 def page_obj():
     return page_by_guess(config.config_page())
