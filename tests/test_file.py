@@ -1,3 +1,5 @@
+from click.testing import CliRunner
+
 from tent_pole import file as tp_file
 
 
@@ -20,9 +22,14 @@ class FakeCourseForFile:
     def __init__(self, files):
         self.id = 999
         self._files = files
+        self.upload_calls = []
 
     def get_files(self):
         return self._files
+
+    def upload(self, filename, **kwargs):
+        self.upload_calls.append((filename, kwargs))
+        return True, {}
 
 
 def write_local_file(path, content=b"file content"):
@@ -117,3 +124,23 @@ def test_remote_drift_not_deep_ignores_content_mismatch_if_size_matches(tmp_path
     recorded = {"size": 11, "hash": tp_file.manifest.hash_file(local)}
 
     assert tp_file.__remote_drift(local, recorded, fake_course, deep=False) is None
+
+
+def test_push_uploads_into_the_tent_pole_folder(tmp_path, monkeypatch):
+    """The whole point of this feature: every push lands in a dedicated
+    folder (fixed name, default-on -- not opt-in), so "did tent-pole
+    manage this" becomes a cheap folder check later, instead of
+    landing in Canvas's generic "unfiled" folder like everything else."""
+    local = write_local_file(tmp_path / "example.txt")
+    fake_course = FakeCourseForFile([])
+    monkeypatch.setattr(tp_file.course, "course_obj", lambda: fake_course)
+
+    runner = CliRunner()
+    result = runner.invoke(tp_file.file, ["push", local])
+
+    assert result.exit_code == 0, result.output
+    assert len(fake_course.upload_calls) == 1
+    uploaded_filename, kwargs = fake_course.upload_calls[0]
+    assert uploaded_filename == local
+    assert kwargs == {"parent_folder_path": tp_file.TENT_POLE_FOLDER}
+    assert tp_file.TENT_POLE_FOLDER == "tent-pole"

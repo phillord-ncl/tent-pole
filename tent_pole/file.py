@@ -5,6 +5,15 @@ import toml
 from . import course
 from . import manifest
 
+## Fixed, not configurable -- every file tent-pole uploads lands here,
+## rather than Canvas's generic default "unfiled" folder, so "did
+## tent-pole manage this" becomes a cheap folder_id check. Must only ever
+## be passed as upload()'s parent_folder_path -- never via a separate
+## create_folder() call, which resolves relative to a different parent
+## ("unfiled" rather than the course root) and creates a second,
+## inconsistent folder of the same name (confirmed live).
+TENT_POLE_FOLDER = "tent-pole"
+
 def __canvasfilename_from_path(path):
     return os.path.basename(path)
 
@@ -86,7 +95,7 @@ def dump(filename):
 @file.command(help="Create or Update a file")
 @click.argument("filename")
 def push(filename):
-    course.course_obj().upload(filename)
+    course.course_obj().upload(filename, parent_folder_path=TENT_POLE_FOLDER)
 
 @file.command(help="Check whether the local file has changed since it was "
                     "last pushed. Local only, no network access.")
