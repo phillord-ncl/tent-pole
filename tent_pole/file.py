@@ -46,5 +46,3 @@ def dump(filename):
 @click.argument("filename")
 def push(filename):
     course.course_obj().upload(filename)
-
-
