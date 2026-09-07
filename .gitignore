@@ -1,1 +1,4 @@
 __pycache__
+dev/
+dist/
+tent_pole.egg-info/
