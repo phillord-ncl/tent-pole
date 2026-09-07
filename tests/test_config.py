@@ -57,20 +57,48 @@ def test_fetch_config_returns_empty_dict_if_no_files_exist(tmp_path):
     assert config.fetch_config([missing]) == {}
 
 
-def test_ancestor_config_paths_root_most_first(tmp_path):
-    deep = tmp_path / "a" / "b" / "c"
+def test_ancestor_config_paths_stops_at_git_boundary(tmp_path):
+    root = tmp_path / "course-repo"
+    deep = root / "a" / "b" / "c"
     deep.mkdir(parents=True)
+    (root / ".git").mkdir()
 
     paths = config.ancestor_config_paths(str(deep))
     dirs = [os.path.dirname(p) for p in paths]
 
     assert all(p.endswith("tent-pole.toml") for p in paths)
-    assert dirs[0] == os.path.abspath(os.sep)  # filesystem root first
+    assert dirs[0] == str(root)  # repo root first, not the filesystem root
     assert dirs[-1] == str(deep)  # most specific (start_dir) last
     # an unbroken parent-to-child chain, each dir the direct parent of the next
     for parent, child in zip(dirs, dirs[1:]):
         assert os.path.dirname(child) == parent
     assert len(dirs) == len(set(dirs))  # no duplicates
+
+
+def test_ancestor_config_paths_git_as_file_also_counts_as_boundary(tmp_path):
+    """A worktree's .git is a file (pointing at the shared repo), not a
+    directory -- must work as a boundary just as well as a real .git/."""
+    root = tmp_path / "course-repo-worktree"
+    deep = root / "a"
+    deep.mkdir(parents=True)
+    (root / ".git").write_text("gitdir: /somewhere/else\n")
+
+    paths = config.ancestor_config_paths(str(deep))
+    dirs = [os.path.dirname(p) for p in paths]
+
+    assert dirs[0] == str(root)
+
+
+def test_ancestor_config_paths_never_crawls_to_filesystem_root_without_a_git_boundary(tmp_path):
+    """The actual risk being guarded against: no .git anywhere above
+    start_dir must mean no cascade at all, not a fall-through crawl all
+    the way up to / (which could pick up an unrelated tent-pole.toml)."""
+    deep = tmp_path / "a" / "b" / "c"
+    deep.mkdir(parents=True)
+
+    paths = config.ancestor_config_paths(str(deep))
+
+    assert paths == [os.path.join(str(deep), "tent-pole.toml")]
 
 
 def test_cascade_lets_a_repo_root_config_apply_to_a_subdirectory(tmp_path):
@@ -80,6 +108,7 @@ def test_cascade_lets_a_repo_root_config_apply_to_a_subdirectory(tmp_path):
     root = tmp_path / "course-repo"
     sub = root / "project-1"
     sub.mkdir(parents=True)
+    (root / ".git").mkdir()
     write_toml(root / "tent-pole.toml", {"course": {"id": "12345"}})
 
     merged = config.fetch_config(config.ancestor_config_paths(str(sub)))
@@ -91,12 +120,27 @@ def test_subdirectory_config_overrides_repo_root_on_conflict(tmp_path):
     root = tmp_path / "course-repo"
     sub = root / "project-1"
     sub.mkdir(parents=True)
+    (root / ".git").mkdir()
     write_toml(root / "tent-pole.toml", {"course": {"id": "12345"}})
     write_toml(sub / "tent-pole.toml", {"course": {"id": "OVERRIDE"}})
 
     merged = config.fetch_config(config.ancestor_config_paths(str(sub)))
 
     assert merged["course"]["id"] == "OVERRIDE"
+
+
+def test_cascade_ignores_config_above_the_repo_boundary(tmp_path):
+    """A tent-pole.toml sitting outside the repo (above the .git
+    boundary) must never apply -- this is the whole point of the fix."""
+    root = tmp_path / "course-repo"
+    sub = root / "project-1"
+    sub.mkdir(parents=True)
+    (root / ".git").mkdir()
+    write_toml(tmp_path / "tent-pole.toml", {"course": {"id": "UNRELATED"}})
+
+    merged = config.fetch_config(config.ancestor_config_paths(str(sub)))
+
+    assert merged == {}
 
 
 def test_config_api_url_falls_back_to_default(monkeypatch):
