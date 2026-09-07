@@ -1,4 +1,6 @@
+import datetime
 import os
+import re
 import tempfile
 import toml
 from urllib.parse import urlparse
@@ -10,11 +12,20 @@ import pygments.util
 
 from panflute import *
 
+COMPILED_AT_PATTERN = re.compile(r'data-compiled-at="([^"]*)"')
+
 def tpp(f):
     return toml.load(f + ".tpp")
 
 def tpf(f):
     return toml.load(f + ".tpf")
+
+def extract_compiled_at(html):
+    """Reads back the compile timestamp embedded by add_tent_pole_marker,
+    if present. None if the content was never processed by canvas-filter
+    (e.g. raw HTML pushed directly) -- see that function's docstring."""
+    match = COMPILED_AT_PATTERN.search(html)
+    return match.group(1) if match else None
 
 def highlight_source(text, lang):
     """Syntax-highlight `text` as `lang` using Pygments, falling back to
@@ -140,8 +151,25 @@ def canvas_filter(elem, doc):
     if type(elem) == CodeBlock:
         return code_filter(elem, doc)
 
+def add_tent_pole_marker(doc):
+    """Appends a hidden marker span carrying a compile timestamp, so a
+    page pushed through canvas-filter can be positively identified as
+    tent-pole-managed, and the exact build currently live on Canvas can
+    be verified later (compare this timestamp against what tent_pole.page
+    records at push time) rather than just inferring drift from
+    last_edited_by/updated_at. Deliberately not an HTML comment --
+    Canvas's sanitizer strips comments from page bodies unconditionally
+    on save (confirmed live against the sandbox course), but preserves a
+    plain hidden <span> with a data attribute intact."""
+    timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    marker = RawBlock(
+        '<span style="display:none" data-tent-pole="managed" '
+        'data-compiled-at="{}"></span>'.format(timestamp)
+    )
+    doc.content.append(marker)
+
 def main(doc=None):
-    return run_filter(canvas_filter, doc=doc)
+    return run_filter(canvas_filter, finalize=add_tent_pole_marker, doc=doc)
 
 if __name__ == '__main__':
     main()

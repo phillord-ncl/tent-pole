@@ -1,9 +1,21 @@
+import datetime
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 
 import pytest
+
+from tent_pole import canvas_filter
+
+TENT_POLE_MARKER_PATTERN = re.compile(
+    r'<span style="display:none" data-tent-pole="managed" data-compiled-at="[^"]*"></span>\n?'
+)
+
+
+def strip_tent_pole_marker(html):
+    return TENT_POLE_MARKER_PATTERN.sub("", html)
 
 
 def _resolve_pandoc():
@@ -52,7 +64,11 @@ def test_python_code_is_highlighted():
 def test_unknown_language_falls_back_to_plain():
     html = run_pandoc_filter("unknown-language-code.md")
     assert "some plain content here" in html
-    assert "<span" not in html.replace("<span></span>", "")
+    ## "no highlighting spans wrapping the content" -- not "no spans at
+    ## all in the document": every document now carries the tent-pole
+    ## marker span (added by add_tent_pole_marker), which is unrelated.
+    content_only = strip_tent_pole_marker(html)
+    assert "<span" not in content_only.replace("<span></span>", "")
 
 
 def test_plain_code_block_unchanged():
@@ -97,3 +113,12 @@ def test_mp4_link_becomes_video_iframe():
 def test_image_becomes_canvas_preview_url():
     html = run_pandoc_filter("image.md")
     assert "courses/16807/files/7/preview" in html
+
+
+def test_output_carries_tent_pole_marker_with_extractable_timestamp():
+    html = run_pandoc_filter("plain-code.md")
+    compiled_at = canvas_filter.extract_compiled_at(html)
+
+    assert compiled_at is not None
+    ## Round-trips through datetime.fromisoformat without raising
+    datetime.datetime.fromisoformat(compiled_at)

@@ -1,3 +1,5 @@
+import datetime
+
 import panflute as pf
 import toml
 
@@ -130,3 +132,28 @@ def test_canvas_filter_dispatches_by_element_type(tmp_path):
     ## Uninteresting element types are left alone (returns None -> no change)
     para = pf.Para(pf.Str("hello"))
     assert canvas_filter.canvas_filter(para, doc=None) is None
+
+
+## tent-pole tagging marker
+
+def test_extract_compiled_at_finds_the_timestamp():
+    html = '<p>hi</p><span data-tent-pole="managed" data-compiled-at="2026-09-07T00:00:00+00:00"></span>'
+    assert canvas_filter.extract_compiled_at(html) == "2026-09-07T00:00:00+00:00"
+
+
+def test_extract_compiled_at_none_when_marker_absent():
+    assert canvas_filter.extract_compiled_at("<p>plain content, no marker</p>") is None
+
+
+def test_add_tent_pole_marker_appends_span_with_valid_timestamp():
+    doc = pf.Doc(pf.Para(pf.Str("hello")))
+    canvas_filter.add_tent_pole_marker(doc)
+
+    assert len(doc.content) == 2
+    marker = doc.content[1]
+    assert isinstance(marker, pf.RawBlock)
+    assert 'data-tent-pole="managed"' in marker.text
+
+    compiled_at = canvas_filter.extract_compiled_at(marker.text)
+    assert compiled_at is not None
+    datetime.datetime.fromisoformat(compiled_at)

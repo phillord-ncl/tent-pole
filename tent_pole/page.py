@@ -4,6 +4,7 @@ import os
 import stringcase
 import toml
 
+from . import canvas_filter
 from . import config
 from . import course
 from . import manifest
@@ -96,10 +97,15 @@ def create(filename):
 def __tpp_path(filename):
     return os.path.splitext(filename)[0] + ".tpp"
 
+def __local_compiled_at(filename):
+    with open(filename) as fh:
+        return canvas_filter.extract_compiled_at(fh.read())
+
 def __page_metadata(filename, pageobj):
     edited_by = pageobj.last_edited_by or {}
     return {
         "hash": manifest.hash_file(filename),
+        "compiled_at": __local_compiled_at(filename),
         "page_id": pageobj.page_id,
         "url": pageobj.url,
         "title": pageobj.title,
@@ -127,9 +133,7 @@ def __local_drift(filename, recorded):
         return "local file has changed since it was last pushed"
     return None
 
-def __remote_drift(filename, recorded):
-    canvasname = canvasname_from_path(filename)
-    pageobj = course.course_obj().get_page(canvasname)
+def __editor_drift(pageobj, recorded):
     current_edited_by = pageobj.last_edited_by or {}
     recorded_edited_by = recorded.get("last_edited_by") or {}
 
@@ -151,6 +155,41 @@ def __remote_drift(filename, recorded):
             "and no baseline was recorded to compare against"
         ).format(current_edited_by.get("display_name"))
     return None
+
+def __compiled_at_drift(pageobj, recorded):
+    """Stronger than __editor_drift for pages pushed through
+    canvas-filter: compares the compile-timestamp marker actually live on
+    Canvas against the one recorded at the last push, so re-pushing an
+    old, unrebuilt local file (still edited_by tent-pole, so
+    __editor_drift alone wouldn't catch it) is still detected. No
+    baseline (page never went through canvas-filter, or predates this
+    feature) means nothing to compare -- not a drift signal either way."""
+    recorded_compiled_at = recorded.get("compiled_at")
+    if recorded_compiled_at is None:
+        return None
+
+    live_compiled_at = canvas_filter.extract_compiled_at(pageobj.body)
+    if live_compiled_at != recorded_compiled_at:
+        return (
+            "live content's compiled-at marker doesn't match what was "
+            "last pushed (recorded {}, live {})"
+        ).format(recorded_compiled_at, live_compiled_at)
+    return None
+
+def __remote_drift(filename, recorded):
+    """Returns a list (possibly empty) rather than a single optional
+    problem, so an editor change and a compiled-at mismatch occurring
+    together are both reported, not just whichever is checked first."""
+    canvasname = canvasname_from_path(filename)
+    pageobj = course.course_obj().get_page(canvasname)
+
+    return [
+        p for p in (
+            __editor_drift(pageobj, recorded),
+            __compiled_at_drift(pageobj, recorded),
+        )
+        if p
+    ]
 
 @page.command(help="Dump information to a local file.")
 @click.argument("filename")
@@ -176,13 +215,8 @@ def check(filename):
 @click.argument("filename")
 def verify(filename):
     recorded = __load_tpp(filename)
-    problems = [
-        p for p in (
-            __local_drift(filename, recorded),
-            __remote_drift(filename, recorded),
-        )
-        if p
-    ]
+    local_problem = __local_drift(filename, recorded)
+    problems = ([local_problem] if local_problem else []) + __remote_drift(filename, recorded)
     if problems:
         raise click.ClickException("; ".join(problems))
     print("OK: {} matches local and remote state".format(filename))
