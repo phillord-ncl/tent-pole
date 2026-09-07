@@ -1,36 +1,49 @@
-"""Pins the .tpf keys that canvas-filter (a separate repo,
-~/src/python/canvas-filter) actually depends on, confirmed against its
-real source (canvas_filter/__init__.py) rather than assumption:
+"""Confirms tent_pole.file's .tpf output is actually consumable by
+tent_pole.canvas_filter's image_filter/link_filter -- a real, enforced
+integration test now that both live in the same repo. Before the
+canvas-filter absorption feature, this used to just pin the set of .tpf
+keys canvas-filter's separate repo depended on (confirmed by hand
+against its source), since there was no way to run its actual code
+here. See claude_redesign.md's canvas-filter section for why that used
+to matter: dropping the unused "uuid" key during the state-manifest
+feature was safe, but only because it was checked by hand first."""
 
-    include_url = "../files/{}/download".format(str(tpf(include).get("id")))
-    ...format(uuid=tpf_data.get("media_entry_id"))
-    ...format(id=tpf_data.get("id"), ..., course=tpf_data.get("course"))
-
-canvas-filter has no tests of its own, and this contract is otherwise
-completely implicit -- a change here could silently break it with
-nothing catching it (this happened for real once already: dropping the
-unused "uuid" key during the state-manifest feature was safe, but only
-because it was checked by hand against canvas-filter's source first).
-See claude_redesign.md for the plan to absorb canvas-filter outright,
-which would let this contract be enforced by a real shared test instead
-of a comment like this one."""
+import toml
+import panflute as pf
 
 from tests.test_file import FakeCanvasFile, FakeCourseForFile, write_local_file
 
+from tent_pole import canvas_filter
 from tent_pole import file as tp_file
 
-CANVAS_FILTER_REQUIRED_TPF_KEYS = {"id", "media_entry_id", "course"}
 
-
-def test_tpf_data_includes_every_key_canvas_filter_reads(tmp_path):
-    local = write_local_file(tmp_path / "example.txt")
-    canvas_file = FakeCanvasFile("example.txt")
-    fake_course = FakeCourseForFile([canvas_file])
-
+def write_tpf_from_real_data(local, fake_course):
     data = tp_file.__data(local, fake_course)
+    with open(local + ".tpf", "w") as fh:
+        toml.dump(data, fh)
+    return data
 
-    missing = CANVAS_FILTER_REQUIRED_TPF_KEYS - data.keys()
-    assert not missing, (
-        "canvas-filter reads these .tpf keys directly (see module "
-        "docstring) -- removing one would silently break it: {}"
-    ).format(missing)
+
+def test_file_data_is_consumable_by_image_filter(tmp_path):
+    local = write_local_file(tmp_path / "diagram.png")
+    canvas_file = FakeCanvasFile("diagram.png", size=100, id=7)
+    fake_course = FakeCourseForFile([canvas_file])
+    write_tpf_from_real_data(local, fake_course)
+
+    elem = pf.Image(pf.Str("x"), url=local, title="x")
+    result = canvas_filter.image_filter(elem, doc=None)
+
+    assert isinstance(result, pf.RawInline)
+    assert "courses/{}/files/{}/preview".format(fake_course.id, canvas_file.id) in result.text
+
+
+def test_file_data_is_consumable_by_link_filter(tmp_path):
+    local = write_local_file(tmp_path / "handout.pdf")
+    canvas_file = FakeCanvasFile("handout.pdf", size=100, id=99)
+    fake_course = FakeCourseForFile([canvas_file])
+    write_tpf_from_real_data(local, fake_course)
+
+    elem = pf.Link(pf.Str("x"), url=local)
+    result = canvas_filter.link_filter(elem, doc=None)
+
+    assert result.url == "../files/{}/download".format(canvas_file.id)

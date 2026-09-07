@@ -216,6 +216,27 @@ files = [
 pyparsing = ">=2.0.2,<3.0.5 || >3.0.5"
 
 [[package]]
+name = "panflute"
+version = "2.3.1"
+description = "Pythonic Pandoc filters"
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "panflute-2.3.1-py3-none-any.whl", hash = "sha256:e44afd875b7b17ffebbbe58282849df06d9f1b20a45a2f933cd51bdcf4e89130"},
+    {file = "panflute-2.3.1.tar.gz", hash = "sha256:5f1bd02a34ef3982ee025ec5b58fb3a6eedfc31d994b8ae39d8dc9915a2d8f1f"},
+]
+
+[package.dependencies]
+click = ">=6,<9"
+pyyaml = ">=3,<7"
+
+[package.extras]
+dev = ["configparser", "coverage", "flake8", "pandocfilters", "pytest", "pytest-cov", "requests"]
+extras = ["yamlloader (>=1,<2)"]
+pypi = ["Pygments", "docutils", "twine", "wheel"]
+
+[[package]]
 name = "platformdirs"
 version = "4.11.7"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a `user data dir`."
@@ -268,7 +289,7 @@ version = "2.21.0"
 description = "Pygments is a syntax highlighting package written in Python."
 optional = false
 python-versions = ">=3.9"
-groups = ["dev"]
+groups = ["main", "dev"]
 files = [
     {file = "pygments-2.21.0-py3-none-any.whl", hash = "sha256:2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9"},
     {file = "pygments-2.21.0.tar.gz", hash = "sha256:610ca751c9bc2492b38eb9a38a7fbc93edbbb2d7182edaf34e66ae493dee5c8c"},
@@ -362,7 +383,7 @@ version = "6.0.3"
 description = "YAML parser and emitter for Python"
 optional = false
 python-versions = ">=3.8"
-groups = ["dev"]
+groups = ["main", "dev"]
 files = [
     {file = "PyYAML-6.0.3-cp38-cp38-macosx_10_13_x86_64.whl", hash = "sha256:c2514fceb77bc5e7a2f7adfaa1feb2fb311607c9cb518dbc378688ec73d8292f"},
     {file = "PyYAML-6.0.3-cp38-cp38-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:9c57bb8c96f6d1808c030b1687b9b5fb476abaa47f0db9c0101f5e9f394e97f4"},
@@ -546,4 +567,4 @@ python-discovery = ">=1.6"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4.0"
-content-hash = "ce46b360eddaaf82d33df8bda945ee5521b40ceb4c24f1210aa1c98c55bb943b"
+content-hash = "091d55f97b3ab95172642367495e4c1b43e9af1a4da864503305e8479cd6adaa"

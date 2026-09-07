@@ -12,9 +12,12 @@ appdirs = "^1.4.4"
 toml = "^0.10.1"
 dpath = "^2.0.1"
 stringcase = "^1.2.0"
+panflute = "^2.3.1"
+pygments = "^2.19"
 
 [tool.poetry.scripts]
 tent-pole = "tent_pole.main:main"
+canvas-filter = "tent_pole.canvas_filter:main"
 
 
 [tool.poetry.group.dev.dependencies]
