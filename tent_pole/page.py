@@ -6,6 +6,7 @@ import toml
 
 from . import config
 from . import course
+from . import manifest
 
 def canvasname_from_path(filename):
     return os.path.splitext(
@@ -92,12 +93,99 @@ def create(filename):
 
     return __create_page(course, canvastitle)
 
+def __tpp_path(filename):
+    return os.path.splitext(filename)[0] + ".tpp"
+
+def __page_metadata(filename, pageobj):
+    edited_by = pageobj.last_edited_by or {}
+    return {
+        "hash": manifest.hash_file(filename),
+        "page_id": pageobj.page_id,
+        "url": pageobj.url,
+        "title": pageobj.title,
+        "updated_at": pageobj.updated_at,
+        "last_edited_by": {
+            "id": edited_by.get("id"),
+            "display_name": edited_by.get("display_name"),
+        },
+    }
+
+def __load_tpp(filename):
+    tppfile = __tpp_path(filename)
+    if not os.path.exists(tppfile):
+        raise click.ClickException(
+            "No {} found -- run push and dump first".format(tppfile)
+        )
+    with open(tppfile) as fh:
+        return toml.load(fh)
+
+def __local_drift(filename, recorded):
+    recorded_hash = recorded.get("hash")
+    if recorded_hash is None:
+        return "no hash recorded in {} -- push and dump again".format(__tpp_path(filename))
+    if manifest.hash_file(filename) != recorded_hash:
+        return "local file has changed since it was last pushed"
+    return None
+
+def __remote_drift(filename, recorded):
+    canvasname = canvasname_from_path(filename)
+    pageobj = course.course_obj().get_page(canvasname)
+    current_edited_by = pageobj.last_edited_by or {}
+    recorded_edited_by = recorded.get("last_edited_by") or {}
+
+    if recorded_edited_by.get("id") is not None:
+        if current_edited_by.get("id") != recorded_edited_by.get("id"):
+            return "page's editor changed since the last push (was {}, now {})".format(
+                recorded_edited_by.get("display_name"),
+                current_edited_by.get("display_name"),
+            )
+        return None
+
+    ## No baseline editor recorded (e.g. a .tpp from before this existed):
+    ## fall back to checking the current editor is at least tent-pole's
+    ## own identity.
+    current_id = current_edited_by.get("id")
+    if current_id is not None and current_id != config.config_current_user_id():
+        return (
+            "page was last edited by someone other than tent-pole ({}), "
+            "and no baseline was recorded to compare against"
+        ).format(current_edited_by.get("display_name"))
+    return None
+
 @page.command(help="Dump information to a local file.")
 @click.argument("filename")
 def dump(filename):
-    with open(os.path.splitext(filename)[0] + ".tpp", "w") as fh:
-        ## Nothing to say at the moment
-        toml.dump({},fh)
+    canvasname = canvasname_from_path(filename)
+    pageobj = course.course_obj().get_page(canvasname)
+    with open(__tpp_path(filename), "w") as fh:
+        toml.dump(__page_metadata(filename, pageobj), fh)
+
+@page.command(help="Check whether the local file has changed since it was "
+                    "last pushed. Local only, no network access.")
+@click.argument("filename")
+def check(filename):
+    recorded = __load_tpp(filename)
+    problem = __local_drift(filename, recorded)
+    if problem:
+        raise click.ClickException(problem)
+    print("OK: {} unchanged since last push".format(filename))
+
+@page.command(help="Check local and remote drift: whether the local file "
+                    "has changed, and whether the page was edited on "
+                    "Canvas by someone else since the last push.")
+@click.argument("filename")
+def verify(filename):
+    recorded = __load_tpp(filename)
+    problems = [
+        p for p in (
+            __local_drift(filename, recorded),
+            __remote_drift(filename, recorded),
+        )
+        if p
+    ]
+    if problems:
+        raise click.ClickException("; ".join(problems))
+    print("OK: {} matches local and remote state".format(filename))
 
 @page.command(help="Update an existing page that exists")
 @click.argument("filename")

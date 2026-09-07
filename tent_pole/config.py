@@ -79,6 +79,12 @@ def config_api_url():
 def config_canvas():
     return Canvas(config_api_url(), config_api_key())
 
+def config_current_user_id():
+    """The Canvas user id tent-pole's own API key authenticates as --
+    used to tell tent-pole's own edits apart from someone else's when
+    checking a page's last_edited_by."""
+    return config_canvas().get_current_user().id
+
 def config_test_api_key():
     return get_maybe(CONFIG, "dev/test_api_key") or config_api_key()
 
