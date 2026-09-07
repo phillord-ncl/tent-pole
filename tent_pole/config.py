@@ -16,14 +16,33 @@ def get_maybe(config,key):
 def fetch_config(files):
     files = [toml.load(f) for f in files if os.path.exists(f)]
     ## merge here does a deep merge, otherwise one section will overload another
-    return functools.reduce(dpath.util.merge, files)
+    ## initial {} means "no config file anywhere" returns an empty config
+    ## instead of crashing (functools.reduce has no sane default over an
+    ## empty sequence otherwise)
+    return functools.reduce(dpath.util.merge, files, {})
+
+def ancestor_config_paths(start_dir=None):
+    """Every tent-pole.toml from the filesystem root down to start_dir
+    (default: the current directory), root-most first. Merging in this
+    order means the most specific file (closest to start_dir) wins on any
+    conflicting key -- so a course repo can set e.g. course/id once at
+    its root and have every subproject directory inherit it, overriding
+    only what a deeper directory actually needs to override."""
+    current = os.path.abspath(start_dir or os.getcwd())
+    dirs = []
+    while True:
+        dirs.append(current)
+        parent = os.path.dirname(current)
+        if parent == current:
+            break
+        current = parent
+    dirs.reverse()
+    return [os.path.join(d, "tent-pole.toml") for d in dirs]
 
 def config_config():
     return fetch_config(
-        [
-            appdirs.user_config_dir("tent-pole") + "/tent-pole.toml",
-            "./tent-pole.toml"
-        ]
+        [appdirs.user_config_dir("tent-pole") + "/tent-pole.toml"]
+        + ancestor_config_paths()
     )
 
 def config_course():
@@ -44,8 +63,11 @@ def config_module_items():
 def config_api_key():
     return dpath.util.get(CONFIG, "general/api_key")
 
+def config_api_url():
+    return get_maybe(CONFIG, "general/api_url") or DEFAULT_API_URL
+
 def config_canvas():
-    return Canvas(API_URL, config_api_key())
+    return Canvas(config_api_url(), config_api_key())
 
 def config_test_api_key():
     return get_maybe(CONFIG, "dev/test_api_key") or config_api_key()
@@ -57,13 +79,13 @@ def config_test_api_url():
     return get_maybe(CONFIG, "dev/test_api_url")
 
 def config_test_canvas():
-    ## Deliberately no fallback to the production API_URL: tests must
-    ## have an explicit target (e.g. beta) so a missing config value
+    ## Deliberately no fallback to config_api_url()/DEFAULT_API_URL: tests
+    ## must have an explicit target (e.g. beta) so a missing config value
     ## can never silently mean "run against the live instance".
     return Canvas(config_test_api_url(), config_test_api_key())
 
 
-API_URL="https://ncl.instructure.com"
+DEFAULT_API_URL = "https://ncl.instructure.com"
 CONFIG = config_config()
 
 ## CLI
