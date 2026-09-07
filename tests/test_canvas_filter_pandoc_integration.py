@@ -1,10 +1,26 @@
+import os
 import pathlib
 import shutil
 import subprocess
 
 import pytest
 
-pandoc_missing = shutil.which("pandoc") is None
+
+def _resolve_pandoc():
+    """Prefer a cabal-installed pandoc (~/.cabal/bin/pandoc) over
+    whatever the system package manager happens to have on PATH -- the
+    whole point of installing it via cabal is to pin an exact version
+    rather than track distro drift, so tests should honour that choice
+    when it's present rather than silently falling back to an older
+    system pandoc."""
+    cabal_pandoc = os.path.expanduser("~/.cabal/bin/pandoc")
+    if os.path.isfile(cabal_pandoc) and os.access(cabal_pandoc, os.X_OK):
+        return cabal_pandoc
+    return shutil.which("pandoc")
+
+
+PANDOC = _resolve_pandoc()
+pandoc_missing = PANDOC is None
 pytestmark = pytest.mark.skipif(pandoc_missing, reason="pandoc not installed")
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures" / "pandoc"
@@ -18,7 +34,7 @@ def run_pandoc_filter(fixture_name):
     live in tests/fixtures/pandoc/ and are run in place (read-only --
     canvas-filter never writes into the document/.tpf files it reads)."""
     result = subprocess.run(
-        ["pandoc", fixture_name, "--filter=canvas-filter"],
+        [PANDOC, fixture_name, "--filter=canvas-filter"],
         cwd=FIXTURES,
         capture_output=True,
         text=True,
