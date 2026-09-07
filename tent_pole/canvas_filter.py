@@ -30,8 +30,7 @@ def extract_compiled_at(html):
 def highlight_source(text, lang):
     """Syntax-highlight `text` as `lang` using Pygments, falling back to
     unhighlighted plain text for an unrecognised language rather than
-    erroring -- replaces GNU source-highlight, whose per-language config
-    files were fragile to extend for new/obscure languages."""
+    erroring."""
     try:
         lexer = pygments.lexers.get_lexer_by_name(lang)
     except pygments.util.ClassNotFound:
@@ -159,8 +158,8 @@ def add_tent_pole_marker(doc):
     records at push time) rather than just inferring drift from
     last_edited_by/updated_at. Deliberately not an HTML comment --
     Canvas's sanitizer strips comments from page bodies unconditionally
-    on save (confirmed live against the sandbox course), but preserves a
-    plain hidden <span> with a data attribute intact."""
+    on save, but preserves a plain hidden <span> with a data attribute
+    intact."""
     timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
     marker = RawBlock(
         '<span style="display:none" data-tent-pole="managed" '

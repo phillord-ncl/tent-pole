@@ -10,7 +10,7 @@ pytestmark = pytest.mark.canvas
 def test_push_then_fetch_round_trip(sandbox_course):
     """Confirms tent-pole's push actually lands on Canvas as intended, by
     reading it straight back via the API afterwards -- no browser/login
-    needed. See claude_redesign.md's Testing/verification section.
+    needed.
 
     The body includes a fresh timestamp on every run rather than a fixed
     string: with a fixed string, a silently failed edit() on a *second*

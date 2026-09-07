@@ -42,7 +42,7 @@ def course_by_exact(courseidentifier, canvas=None):
     course_code or name only, and raises rather than silently picking one
     course out of several on an ambiguous identifier. Intended for
     config-driven lookups (e.g. [dev] test_course_id) where certainty
-    matters more than typing convenience -- see claude_redesign.md."""
+    matters more than typing convenience."""
     canvas = canvas or config.config_canvas()
 
     if str(courseidentifier).isnumeric():

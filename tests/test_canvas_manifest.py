@@ -16,7 +16,7 @@ pandoc_missing = shutil.which("pandoc") is None
 def test_page_manifest_cycle(sandbox_course, tmp_path, monkeypatch):
     """push -> dump -> check/verify pass -> local edit -> check/verify
     correctly detect the drift. Real push against the sandbox course, no
-    mocking -- see claude_redesign.md's state/manifest section."""
+    mocking."""
     monkeypatch.setattr(page.course, "course_obj", lambda: sandbox_course)
 
     local = tmp_path / "manifest-cycle-page.html"

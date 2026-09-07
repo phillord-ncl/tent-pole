@@ -16,8 +16,7 @@ def sandbox_course():
     if missing:
         pytest.skip(
             "Missing [dev] {} in tent-pole.toml; skipping Canvas test "
-            "(default target is the beta instance's sandbox module, "
-            "not live -- see claude_redesign.md)".format(", ".join(missing))
+            "(default target is a sandbox course, not live)".format(", ".join(missing))
         )
 
     canvas = config.config_test_canvas()

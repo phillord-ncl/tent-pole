@@ -1,12 +1,7 @@
 """Confirms tent_pole.file's .tpf output is actually consumable by
-tent_pole.canvas_filter's image_filter/link_filter -- a real, enforced
-integration test now that both live in the same repo. Before the
-canvas-filter absorption feature, this used to just pin the set of .tpf
-keys canvas-filter's separate repo depended on (confirmed by hand
-against its source), since there was no way to run its actual code
-here. See claude_redesign.md's canvas-filter section for why that used
-to matter: dropping the unused "uuid" key during the state-manifest
-feature was safe, but only because it was checked by hand first."""
+tent_pole.canvas_filter's image_filter/link_filter -- image_filter and
+link_filter read .tpf fields directly, so a change to what .tpf
+contains could silently break them without a test like this."""
 
 import toml
 import panflute as pf

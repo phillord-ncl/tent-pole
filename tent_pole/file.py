@@ -11,7 +11,7 @@ from . import manifest
 ## be passed as upload()'s parent_folder_path -- never via a separate
 ## create_folder() call, which resolves relative to a different parent
 ## ("unfiled" rather than the course root) and creates a second,
-## inconsistent folder of the same name (confirmed live).
+## inconsistent folder of the same name.
 TENT_POLE_FOLDER = "tent-pole"
 
 def __canvasfilename_from_path(path):
