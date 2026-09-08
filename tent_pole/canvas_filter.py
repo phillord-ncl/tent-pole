@@ -12,6 +12,8 @@ import pygments.util
 
 from panflute import *
 
+from . import config
+
 COMPILED_AT_PATTERN = re.compile(r'data-compiled-at="([^"]*)"')
 
 def tpp(f):
@@ -118,11 +120,11 @@ def link_filter(elem, doc):
 <iframe style="width: 400px; height: 225px; display: inline-block;"
   title="Video player"
   data-media-type="video"
-  src="https://ncl.instructure.com/media_objects_iframe/{uuid}?type=video"
+  src="{api_url}/media_objects_iframe/{uuid}?type=video"
   allowfullscreen="allowfullscreen" allow="fullscreen"
   data-media-id="{uuid}">
 </iframe>
-'''.format(uuid=tpf_data.get("media_entry_id")))
+'''.format(api_url=config.config_api_url(), uuid=tpf_data.get("media_entry_id")))
 
 
     ## Assume it is a file that has to be downloaded, so link to it via the TPF
@@ -133,9 +135,9 @@ def link_filter(elem, doc):
 def image_filter(elem, doc):
     tpf_data = tpf(elem.url)
     return RawInline('''<img id="{id}"
-src="https://ncl.instructure.com/courses/{course}/files/{id}/preview"
+src="{api_url}/courses/{course}/files/{id}/preview"
 alt="{name}" />
-'''.format(id=tpf_data.get("id"),name=elem.title,
+'''.format(api_url=config.config_api_url(), id=tpf_data.get("id"),name=elem.title,
            canvas_uri=tpf_data.get("canvas_uri"),
            course=tpf_data.get("course")))
 
