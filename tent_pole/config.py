@@ -19,7 +19,15 @@ def fetch_config(files):
     ## initial {} means "no config file anywhere" returns an empty config
     ## instead of crashing (functools.reduce has no sane default over an
     ## empty sequence otherwise)
-    return functools.reduce(dpath.util.merge, files, {})
+    ## MERGE_REPLACE: dpath's default (MERGE_ADDITIVE) concatenates
+    ## list-valued keys instead of letting the closer file win, so e.g. a
+    ## subdirectory's [module] items would get silently appended to an
+    ## ancestor's rather than replacing it -- breaks the cascade's whole
+    ## "closest wins" contract for any list-valued key.
+    return functools.reduce(
+        lambda dst, src: dpath.util.merge(dst, src, flags=dpath.util.MERGE_REPLACE),
+        files, {}
+    )
 
 def ancestor_config_paths(start_dir=None):
     """Every tent-pole.toml from the nearest enclosing git repo root down
