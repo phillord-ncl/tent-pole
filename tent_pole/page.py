@@ -53,7 +53,7 @@ def page_by_title(pagetitle):
 def page_by_guess(pageurl):
     if " " not in pageurl:
         try:
-            return config.config_canvas().get_course(config.config_course()).get_page(pageurl)
+            return course.course_obj().get_page(pageurl)
         except canvasapi.exceptions.ResourceDoesNotExist:
             pass
     return page_by_title(pageurl)
@@ -84,14 +84,14 @@ def data(pageurl):
 @page.command(help="Create a page that does not exist")
 @click.argument("filename")
 def create(filename):
-    course = config.config_canvas().get_course(config.config_course())
+    courseobj = course.course_obj()
     canvasname = canvasname_from_path(filename)
     canvastitle = __canvastitle_from_canvasname(canvasname)
 
-    if __page_exists(course, canvasname):
-        raise PageExistsError(course, canvastitle)
+    if __page_exists(courseobj, canvasname):
+        raise PageExistsError(courseobj, canvastitle)
 
-    return __create_page(course, canvastitle)
+    return __create_page(courseobj, canvastitle)
 
 def __tpp_path(filename):
     return os.path.splitext(filename)[0] + ".tpp"
@@ -224,8 +224,8 @@ def verify(filename):
 @click.argument("filename")
 def update(filename):
     with open(filename) as fh: body = fh.read()
-    course = config.config_canvas().get_course(config.config_course())
-    page = course.get_page(canvasname_from_path(filename))
+    courseobj = course.course_obj()
+    page = courseobj.get_page(canvasname_from_path(filename))
     page.edit(
         wiki_page={
             "body":body

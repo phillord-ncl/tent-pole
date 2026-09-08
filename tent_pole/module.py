@@ -16,7 +16,7 @@ def module_by_name(modulename):
 def module_by_guess(moduleidentifier):
     if moduleidentifier.isnumeric():
         try:
-            return config.config_canvas().get_course(config.config_course()).get_module(moduleidentifier)
+            return course.course_obj().get_module(moduleidentifier)
         except canvasapi.exceptions.ResourceDoesNotExist:
             pass
     return module_by_name(moduleidentifier)
@@ -62,8 +62,8 @@ def delete(moduleidentifier):
 @module.command(help="Create a module for a course")
 @click.argument("modulename")
 def create(modulename):
-    course = config.config_canvas().get_course(config.config_course())
-    course.create_module({"name":modulename})
+    courseobj = course.course_obj()
+    courseobj.create_module({"name":modulename})
     print("Created module:", modulename)
 
 @module.command(help="Adds a page to a module")
