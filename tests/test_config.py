@@ -156,6 +156,69 @@ def test_config_api_url_uses_configured_value(monkeypatch):
     assert config.config_api_url() == "https://ncl.beta.instructure.com"
 
 
+## TENT_POLE_USE_TEST_CONFIG: opt-in only -- unset (the default in every
+## test above and in ordinary use) must never let a leftover [dev] test_*
+## value leak into [general]/[course] resolution.
+
+def test_use_test_config_false_by_default(monkeypatch):
+    monkeypatch.delenv("TENT_POLE_USE_TEST_CONFIG", raising=False)
+    assert config.use_test_config() is False
+
+
+def test_use_test_config_true_when_env_var_set(monkeypatch):
+    monkeypatch.setenv("TENT_POLE_USE_TEST_CONFIG", "1")
+    assert config.use_test_config() is True
+
+
+def test_config_api_url_ignores_dev_section_when_test_config_off(monkeypatch):
+    monkeypatch.delenv("TENT_POLE_USE_TEST_CONFIG", raising=False)
+    monkeypatch.setattr(
+        config, "CONFIG",
+        {"general": {"api_url": "https://ncl.instructure.com"},
+         "dev": {"test_api_url": "https://ncl.beta.instructure.com"}},
+    )
+    assert config.config_api_url() == "https://ncl.instructure.com"
+
+
+def test_config_api_url_uses_dev_section_when_test_config_on(monkeypatch):
+    monkeypatch.setenv("TENT_POLE_USE_TEST_CONFIG", "1")
+    monkeypatch.setattr(
+        config, "CONFIG",
+        {"general": {"api_url": "https://ncl.instructure.com"},
+         "dev": {"test_api_url": "https://ncl.beta.instructure.com"}},
+    )
+    assert config.config_api_url() == "https://ncl.beta.instructure.com"
+
+
+def test_config_course_uses_dev_section_when_test_config_on(monkeypatch):
+    monkeypatch.setenv("TENT_POLE_USE_TEST_CONFIG", "1")
+    monkeypatch.setattr(
+        config, "CONFIG",
+        {"course": {"identifier": "CSC1034"},
+         "dev": {"test_course_id": "npl25 Personal Sandbox"}},
+    )
+    assert config.config_course() == "npl25 Personal Sandbox"
+
+
+def test_config_api_key_uses_dev_section_when_test_config_on(monkeypatch):
+    monkeypatch.setenv("TENT_POLE_USE_TEST_CONFIG", "1")
+    monkeypatch.setattr(
+        config, "CONFIG",
+        {"general": {"api_key": "prod-key"}, "dev": {"test_api_key": "test-key"}},
+    )
+    assert config.config_api_key() == "test-key"
+
+
+def test_config_api_key_does_not_blend_general_when_test_config_on_and_dev_unset(monkeypatch):
+    ## "use the test config" means only the test config -- no silent
+    ## fallback to [general] even if [dev] test_api_key is unset, unlike
+    ## config_test_api_key() (used only by the pytest harness), which
+    ## deliberately does fall back to [general] as a convenience.
+    monkeypatch.setenv("TENT_POLE_USE_TEST_CONFIG", "1")
+    monkeypatch.setattr(config, "CONFIG", {"general": {"api_key": "prod-key"}})
+    assert config.config_api_key() is None
+
+
 ## CLI commands -- regression tests: api-key and course used to crash with
 ## "takes 0 positional arguments but 1 was given" (called as
 ## config_api_key(CONFIG)/config_course(CONFIG), but both functions take

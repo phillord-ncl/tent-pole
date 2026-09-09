@@ -63,7 +63,23 @@ def config_config():
         + ancestor_config_paths()
     )
 
+def use_test_config():
+    """Opt-in switch, off by default everywhere: when the
+    TENT_POLE_USE_TEST_CONFIG env var is set, ordinary commands
+    (page/module/file push, etc, not just the pytest [dev] harness) read
+    the [dev] test_* config instead of [general]/[course]. Explicit
+    opt-in rather than a silent "fall back to [dev] if [general]/[course]
+    happen to be unset" -- that would make a leftover [dev] test target
+    (e.g. beta) the ambient default for any directory lacking its own
+    override, which is exactly the kind of surprise this avoids. Lets a
+    fixture like dev/sample-course/ target [dev] test_course_id/
+    test_api_url/test_api_key without needing any of those values -- or
+    any secret -- written into its own tent-pole.toml at all."""
+    return bool(os.environ.get("TENT_POLE_USE_TEST_CONFIG"))
+
 def config_course():
+    if use_test_config():
+        return config_test_course_id()
     return (
         get_maybe(CONFIG, "course/id") or
         get_maybe(CONFIG, "course/identifier")
@@ -79,9 +95,17 @@ def config_module_items():
     return dpath.util.get(CONFIG, "module/items")
 
 def config_api_key():
-    return dpath.util.get(CONFIG, "general/api_key")
+    if use_test_config():
+        ## Reads dev/test_api_key directly, not via config_test_api_key():
+        ## that falls back to config_api_key() when unset, which would
+        ## recurse back here while use_test_config() stays true. "Use the
+        ## test config" should mean only the test config, no blending.
+        return get_maybe(CONFIG, "dev/test_api_key")
+    return get_maybe(CONFIG, "general/api_key")
 
 def config_api_url():
+    if use_test_config():
+        return config_test_api_url()
     return get_maybe(CONFIG, "general/api_url") or DEFAULT_API_URL
 
 def config_canvas():
