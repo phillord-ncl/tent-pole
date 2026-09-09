@@ -1,6 +1,7 @@
 import click
 import dpath.util
 import logging
+import os
 import sys
 
 
@@ -23,7 +24,13 @@ logger.setLevel(logging.DEBUG)
 ## CLI Follows
 @click.group()
 @click.option("-c","--course", "course", help="Course ID")
-def main(course):
+@click.option("--beta", is_flag=True, help="Target [dev] test_course_id/"
+              "test_api_url/test_api_key from your config instead of "
+              "[general]/[course], for this invocation only. Takes "
+              "priority over -c/--course.")
+def main(course, beta):
+    if beta:
+        os.environ["TENT_POLE_USE_TEST_CONFIG"] = "1"
     if course:
         dpath.util.new(config.CONFIG, "course/identifier", "temp")
         dpath.util.set(config.CONFIG, "course/identifier", course[1:])
