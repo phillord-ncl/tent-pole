@@ -1,7 +1,18 @@
-## No [general]/[course]/api_key here on purpose -- see README.md. The
-## Makefile sets TENT_POLE_USE_TEST_CONFIG so every command targets
-## whatever's configured under [dev] in your own global tent-pole.toml
-## (~/.config/tent-pole/tent-pole.toml), never anything written here.
+## Normally we would configure the course_id here like so:
+
+# [general]
+# course_id = "my personal test course"
+
+## This file though falls back to the global configuration.
+##
+## [dev]
+## test_course_id = "my global sandbox course"
+## test_api_url = "https://fred.beta.instructure.com"
+## test_api_key = "..."
+
+
+
+
 [module]
 identifier = "Markdown Feature Test"
 items = [
