@@ -1,0 +1,21 @@
+## Normally we would configure the course_id here like so:
+
+# [general]
+# course_id = "my personal test course"
+
+## This file though falls back to the global configuration.
+##
+## [dev]
+## test_course_id = "my global sandbox course"
+## test_api_url = "https://fred.beta.instructure.com"
+## test_api_key = "..."
+
+
+
+
+[module]
+identifier = "Markdown Feature Test"
+items = [
+  {id="markdown-features-1"},
+  {id="markdown-features-2", indent=1},
+]

@@ -1,4 +1,17 @@
 __pycache__
-dev/
 dist/
 tent_pole.egg-info/
+
+## Generated build products under dev/sample-course/ (see its README.md)
+## -- source is tracked, these are rebuilt by `make`. No secret lives in
+## this directory at all: tent-pole.toml only has [module], and the
+## real target/credentials come from TENT_POLE_USE_TEST_CONFIG + your
+## own global tent-pole.toml's [dev] section.
+dev/sample-course/*.html
+dev/sample-course/*.tpp
+dev/sample-course/*.tpf
+dev/sample-course/*.out
+dev/sample-course/*.stout
+dev/sample-course/*.crash
+dev/sample-course/test-image.png
+dev/sample-course/test-video.mp4

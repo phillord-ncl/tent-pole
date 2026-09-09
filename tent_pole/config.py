@@ -63,7 +63,16 @@ def config_config():
         + ancestor_config_paths()
     )
 
+def use_test_config():
+    """Explicit opt-in (env var), off by default: routes ordinary
+    commands to [dev] test_* instead of [general]/[course]. Never a
+    silent fallback -- that would make a leftover [dev] test target the
+    ambient default for any directory lacking its own override."""
+    return bool(os.environ.get("TENT_POLE_USE_TEST_CONFIG"))
+
 def config_course():
+    if use_test_config():
+        return config_test_course_id()
     return (
         get_maybe(CONFIG, "course/id") or
         get_maybe(CONFIG, "course/identifier")
@@ -79,9 +88,15 @@ def config_module_items():
     return dpath.util.get(CONFIG, "module/items")
 
 def config_api_key():
-    return dpath.util.get(CONFIG, "general/api_key")
+    if use_test_config():
+        ## Not config_test_api_key(): that falls back to config_api_key(),
+        ## which would recurse back here.
+        return get_maybe(CONFIG, "dev/test_api_key")
+    return get_maybe(CONFIG, "general/api_key")
 
 def config_api_url():
+    if use_test_config():
+        return config_test_api_url()
     return get_maybe(CONFIG, "general/api_url") or DEFAULT_API_URL
 
 def config_canvas():
