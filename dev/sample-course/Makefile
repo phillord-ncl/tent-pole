@@ -72,6 +72,13 @@ test-video.mp4.tpf: test-video.mp4
 		$(TENT_POLE) file dump $<; \
 	done
 
+## .PRECIOUS: without it, make deletes %.html as a chain-only intermediate
+## right after each push, so `tent-pole page check`/`verify` afterwards
+## has nothing real to hash against -- it has to rebuild %.html fresh,
+## which embeds a new compile timestamp (add_tent_pole_marker) and so
+## always looks like local drift even when the markdown didn't change.
+## Keeping the actual pushed .html around lets check/verify mean something.
+.PRECIOUS: %.html
 %.html: %.md files demo.out repl_demo.stout crash_demo.crash
 	pandoc --filter=$(CANVAS_FILTER) $< > $@
 
