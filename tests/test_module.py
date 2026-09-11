@@ -116,3 +116,29 @@ def test_create_defaults_to_config_module_when_no_argument(monkeypatch):
     assert result.exit_code == 0, result.output
     assert fake_course.created == {"name": "Week 1"}
     assert "Created module: Week 1" in result.output
+
+
+def test_create_skips_when_a_module_with_that_name_already_exists(monkeypatch):
+    """Idempotent: re-running create (e.g. part-1-prepare a second
+    time) must not create a duplicate module of the same name."""
+    fake_course = FakeCourseForModule(modules=[FakeModule(name="Week 1")])
+    monkeypatch.setattr(module.course, "course_obj", lambda: fake_course)
+
+    result = CliRunner().invoke(module.create, ["Week 1"])
+
+    assert result.exit_code == 0, result.output
+    assert fake_course.created is None
+    assert "Module already exists: Week 1" in result.output
+
+
+def test_create_does_not_treat_a_prefix_match_as_already_existing(monkeypatch):
+    """The existence check is an exact match, not module_by_name's
+    substring search -- "Week 1" must not be satisfied by an existing
+    "Week 10"."""
+    fake_course = FakeCourseForModule(modules=[FakeModule(name="Week 10")])
+    monkeypatch.setattr(module.course, "course_obj", lambda: fake_course)
+
+    result = CliRunner().invoke(module.create, ["Week 1"])
+
+    assert result.exit_code == 0, result.output
+    assert fake_course.created == {"name": "Week 1"}
