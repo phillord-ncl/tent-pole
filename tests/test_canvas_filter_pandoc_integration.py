@@ -113,6 +113,20 @@ def test_mp4_link_becomes_video_iframe():
 def test_image_becomes_canvas_preview_url():
     html = run_pandoc_filter("image.md")
     assert "courses/16807/files/7/preview" in html
+    ## Regression: elem.title (only the optional quoted title after the
+    ## url) used to be used for alt text, silently producing alt="" for
+    ## the plain ![alt](url) form this fixture uses.
+    assert 'alt="My Diagram"' in html
+
+
+def test_image_with_explicit_alt_attribute():
+    html = run_pandoc_filter("image-explicit-alt.md")
+    assert "courses/16807/files/7/preview" in html
+    assert 'alt="An explicit alt text"' in html
+    ## The whole point of the ![](url){alt="..."} form: empty bracket
+    ## content means pandoc never promotes this into a Figure, so no
+    ## unwanted visible <figcaption> appears.
+    assert "<figcaption" not in html
 
 
 def test_output_carries_tent_pole_marker_with_extractable_timestamp():

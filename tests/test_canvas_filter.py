@@ -118,6 +118,43 @@ def test_image_filter_builds_canvas_preview_url(tmp_path):
     assert "courses/16807/files/7/preview" in result.text
 
 
+def test_image_filter_uses_bracket_text_as_alt(tmp_path):
+    """Regression test: elem.title is only the optional quoted string
+    after the url (![alt](url "title")), not the bracket text -- using
+    it for alt= silently produced alt="" for the plain ![alt](url) form
+    used almost everywhere in the real course repos."""
+    image = tmp_path / "diagram.png"
+    write_tpf(image, {"id": 7, "course": 16807})
+
+    elem = pf.Image(pf.Str("Sign"), pf.Space(), pf.Str("Up"), url=str(image))
+    result = canvas_filter.image_filter(elem, doc=None)
+
+    assert 'alt="Sign Up"' in result.text
+
+
+def test_image_filter_prefers_explicit_alt_attribute(tmp_path):
+    """The ![](url){alt="..."} form -- empty bracket content avoids
+    pandoc's implicit-figure/caption promotion of a standalone image,
+    so the alt text has to come from the attribute instead."""
+    image = tmp_path / "diagram.png"
+    write_tpf(image, {"id": 7, "course": 16807})
+
+    elem = pf.Image(url=str(image), attributes={"alt": "Explicit alt text"})
+    result = canvas_filter.image_filter(elem, doc=None)
+
+    assert 'alt="Explicit alt text"' in result.text
+
+
+def test_image_filter_falls_back_to_title_when_no_content_or_attribute(tmp_path):
+    image = tmp_path / "diagram.png"
+    write_tpf(image, {"id": 7, "course": 16807})
+
+    elem = pf.Image(url=str(image), title="Only a title")
+    result = canvas_filter.image_filter(elem, doc=None)
+
+    assert 'alt="Only a title"' in result.text
+
+
 ## canvas_filter dispatcher
 
 def test_canvas_filter_dispatches_by_element_type(tmp_path):

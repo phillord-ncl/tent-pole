@@ -134,10 +134,19 @@ def link_filter(elem, doc):
 
 def image_filter(elem, doc):
     tpf_data = tpf(elem.url)
+    ## Priority: an explicit alt="..." attribute (the ![](url){alt="..."}
+    ## form, which also avoids pandoc's implicit-figure/caption promotion
+    ## of a standalone image -- see claude_include_replacement.md-adjacent
+    ## notes), then the bracket text of ![alt](url), which is stringify()'d
+    ## from elem.content, not elem.title -- .title is only the optional
+    ## quoted string after the url, e.g. ![alt](url "title"), and was
+    ## wrongly used for alt text before this fix, silently producing
+    ## alt="" for every image using the plain ![alt](url) form.
+    alt = elem.attributes.get("alt") or stringify(elem) or elem.title
     return RawInline('''<img id="{id}"
 src="{api_url}/courses/{course}/files/{id}/preview"
 alt="{name}" />
-'''.format(api_url=config.config_api_url(), id=tpf_data.get("id"),name=elem.title,
+'''.format(api_url=config.config_api_url(), id=tpf_data.get("id"), name=alt,
            canvas_uri=tpf_data.get("canvas_uri"),
            course=tpf_data.get("course")))
 
