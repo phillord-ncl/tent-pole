@@ -29,6 +29,19 @@ tent-pole.py --course=23212 page push ./dev/test-1.html
 Pushed:./dev/test-1.html as test-1
 ```
 
+Pandoc filters
+--------------
+
+Tent-Pole also ships two pandoc filters that both understand the same
+`include=`/`output=`/`stout=`/`crash=` code-block syntax:
+
+- `canvas-filter` resolves it into pre-rendered, self-contained HTML
+  for pushing to a Canvas page.
+- `code-include-filter` resolves it into a plain code block instead,
+  for building static output (slides, PDF, standalone HTML) where
+  pandoc itself should do the syntax highlighting per output format.
+
+
 Cheat Sheet
 ------------
 

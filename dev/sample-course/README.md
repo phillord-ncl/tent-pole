@@ -33,6 +33,9 @@ With the venv active (`poetry shell`, or `poetry run` in front of `make`):
 make files    # pushes/dumps demo.py, test-image.png, test-video.mp4,
               # repl_demo.py, crash_demo.py as Canvas files
 make pages    # builds + pushes both markdown pages
+make local    # builds both pages via code-include-filter instead --
+              # no Canvas access at all, just open *.local.html in a
+              # browser
 make create-module   # once only -- creates the "Markdown Feature Test" module
 make reorder          # (re-)populates the module's item list
 ```
