@@ -130,6 +130,21 @@ def test_subdirectory_config_overrides_repo_root_on_conflict(tmp_path):
     assert merged["course"]["id"] == "OVERRIDE"
 
 
+def test_cascade_lets_a_repo_root_beta_flag_apply_to_a_subdirectory(tmp_path):
+    """The motivating case for the config-file beta opt-in: a course
+    repo can set `beta = true` once at its root and have it apply
+    everywhere beneath it, the same way course/id already does."""
+    root = tmp_path / "course-repo"
+    sub = root / "project-1"
+    sub.mkdir(parents=True)
+    (root / ".git").mkdir()
+    write_toml(root / "tent-pole.toml", {"beta": True})
+
+    merged = config.fetch_config(config.ancestor_config_paths(str(sub)))
+
+    assert merged["beta"] is True
+
+
 def test_cascade_ignores_config_above_the_repo_boundary(tmp_path):
     """A tent-pole.toml sitting outside the repo (above the .git
     boundary) must never apply -- this is the whole point of the fix."""
@@ -167,6 +182,29 @@ def test_use_test_config_false_by_default(monkeypatch):
 
 def test_use_test_config_true_when_env_var_set(monkeypatch):
     monkeypatch.setenv("TENT_POLE_USE_TEST_CONFIG", "1")
+    assert config.use_test_config() is True
+
+
+def test_use_test_config_true_when_beta_set_in_config(monkeypatch):
+    """The config-file route: a repo whose tent-pole.toml says
+    `beta = true` targets beta from any invocation, not just ones that
+    went through a Makefile setting the env var -- this is what a
+    direct `tent-pole ...` call from the command line, or a script that
+    bypasses make, relies on."""
+    monkeypatch.delenv("TENT_POLE_USE_TEST_CONFIG", raising=False)
+    monkeypatch.setattr(config, "CONFIG", {"beta": True})
+    assert config.use_test_config() is True
+
+
+def test_use_test_config_false_when_beta_false_in_config(monkeypatch):
+    monkeypatch.delenv("TENT_POLE_USE_TEST_CONFIG", raising=False)
+    monkeypatch.setattr(config, "CONFIG", {"beta": False})
+    assert config.use_test_config() is False
+
+
+def test_use_test_config_true_when_either_env_var_or_config_set(monkeypatch):
+    monkeypatch.setenv("TENT_POLE_USE_TEST_CONFIG", "1")
+    monkeypatch.setattr(config, "CONFIG", {})
     assert config.use_test_config() is True
 
 

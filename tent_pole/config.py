@@ -64,11 +64,17 @@ def config_config():
     )
 
 def use_test_config():
-    """Explicit opt-in (env var), off by default: routes ordinary
-    commands to [dev] test_* instead of [general]/[course]. Never a
-    silent fallback -- that would make a leftover [dev] test target the
-    ambient default for any directory lacking its own override."""
-    return bool(os.environ.get("TENT_POLE_USE_TEST_CONFIG"))
+    """Opt-in either way: the TENT_POLE_USE_TEST_CONFIG env var (set by
+    --beta, or exported by a course repo's Makefile), or a bare
+    top-level `beta = true` in tent-pole.toml. The config-file route
+    matters because a Makefile-only env var is silently bypassed by any
+    direct CLI call that doesn't go through make -- exactly how a
+    module create once landed on production instead of beta. Never a
+    silent fallback beyond these two explicit opt-ins."""
+    return (
+        bool(os.environ.get("TENT_POLE_USE_TEST_CONFIG"))
+        or bool(get_maybe(CONFIG, "beta"))
+    )
 
 def config_course():
     if use_test_config():
