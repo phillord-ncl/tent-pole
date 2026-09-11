@@ -3,12 +3,21 @@ Tent-Pole: Command Line Tools for Canvas
 
 Tent-pole is a command-line client for [Canvas
 LMS](https://www.instructure.com/canvas), built around managing course
-content as local files under version control rather than editing it
-through the Canvas web UI. It pushes pages and files to Canvas, tracks
-whether a local file and its remote copy have drifted apart, and ships
-two Pandoc filters for compiling Markdown into Canvas-ready HTML.
+content as local markdown files under version control rather than
+editing it through the Canvas web UI. It manages both the
+transformation between markdown and HTML suitable for canvas, and
+syncing files between the local machine and canvas.
 
-Requirements: Python >= 3.14. Optional: Pandoc, if using the filters.
+Tent-pole works in concert with an existing command line environment,
+meaning that it can be adapted to generate canvas pages from any kind
+of source, including live code that can be run to generate output
+through the use of GNU Make. HTML generation is done by pandoc, with
+tent-pole supplied filters to support code inclusion. The organisation
+of pages into canvas modules uses TOML configuration.
+
+Requirements: Python >= 3.14.
+Optional: Pandoc, if using the filters.
+Optional: GNU Make for building complete courses.
 
 
 Installation
@@ -26,6 +35,16 @@ virtualenv:
 
 ```
 ./local-install.sh
+```
+
+Tent-pole isn't published on PyPI, but it's still
+[pipx](https://pypa.github.io/pipx/)-installable straight from GitHub
+or a local checkout, since pipx installs anything pip can:
+
+```
+pipx install "git+https://github.com/phillord-ncl/tent-pole.git"
+# or, from a local clone:
+pipx install /path/to/tent-pole/main
 ```
 
 For quick local use without installing anything, `tent-pole.py` in the
