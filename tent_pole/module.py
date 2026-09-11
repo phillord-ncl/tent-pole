@@ -60,8 +60,9 @@ def delete(moduleidentifier):
 
 # should be at course level?
 @module.command(help="Create a module for a course")
-@click.argument("modulename")
+@click.argument("modulename", required=False)
 def create(modulename):
+    modulename = modulename or config.config_module()
     courseobj = course.course_obj()
     courseobj.create_module({"name":modulename})
     print("Created module:", modulename)
