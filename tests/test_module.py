@@ -1,4 +1,5 @@
 import canvasapi.exceptions
+from click.testing import CliRunner
 
 from tent_pole import config, module
 
@@ -14,6 +15,7 @@ class FakeCourseForModule:
         self._modules = modules or []
         self._get_module_result = get_module_result
         self._get_module_raises = get_module_raises
+        self.created = None
 
     def get_modules(self):
         return self._modules
@@ -22,6 +24,10 @@ class FakeCourseForModule:
         if self._get_module_raises:
             raise self._get_module_raises
         return self._get_module_result
+
+    def create_module(self, data):
+        self.created = data
+        return FakeModule(name=data["name"])
 
 
 class FakeCanvasForModule:
@@ -84,3 +90,29 @@ def test_module_by_guess_uses_name_search_when_not_numeric(monkeypatch):
     monkeypatch.setattr(module.course, "course_obj", lambda: fake_course)
 
     assert module.module_by_guess("Week 5") is target
+
+
+## create -- like reorder, should work off tent-pole.toml with no
+## argument, not just when a name is given explicitly.
+
+def test_create_uses_explicit_modulename_when_given(monkeypatch):
+    fake_course = FakeCourseForModule()
+    monkeypatch.setattr(module.course, "course_obj", lambda: fake_course)
+
+    result = CliRunner().invoke(module.create, ["Week 9"])
+
+    assert result.exit_code == 0, result.output
+    assert fake_course.created == {"name": "Week 9"}
+    assert "Created module: Week 9" in result.output
+
+
+def test_create_defaults_to_config_module_when_no_argument(monkeypatch):
+    fake_course = FakeCourseForModule()
+    monkeypatch.setattr(module.course, "course_obj", lambda: fake_course)
+    monkeypatch.setattr(config, "config_module", lambda: "Week 1")
+
+    result = CliRunner().invoke(module.create, [])
+
+    assert result.exit_code == 0, result.output
+    assert fake_course.created == {"name": "Week 1"}
+    assert "Created module: Week 1" in result.output
