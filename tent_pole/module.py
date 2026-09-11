@@ -59,11 +59,19 @@ def delete(moduleidentifier):
         print("Error: Module", moduleidentifier, "not found")
 
 # should be at course level?
-@module.command(help="Create a module for a course")
+@module.command(help="Create a module for a course, unless one with that name already exists")
 @click.argument("modulename", required=False)
 def create(modulename):
     modulename = modulename or config.config_module()
     courseobj = course.course_obj()
+
+    ## Exact match, not module_by_name's substring search -- an
+    ## existence check should never treat e.g. "Week 1" as satisfied by
+    ## a pre-existing "Week 10".
+    if any(m.name == modulename for m in courseobj.get_modules()):
+        print("Module already exists:", modulename)
+        return
+
     courseobj.create_module({"name":modulename})
     print("Created module:", modulename)
 
