@@ -1,113 +1,236 @@
-Tent-Pole: Command Line tools for Canvas
-========================================
+Tent-Pole: Command Line Tools for Canvas
+=========================================
 
-Tent-Pole is a set of command line tools for interacting with content
-on Canvas.
+Tent-pole is a command-line client for [Canvas
+LMS](https://www.instructure.com/canvas), built around managing course
+content as local files under version control rather than editing it
+through the Canvas web UI. It pushes pages and files to Canvas, tracks
+whether a local file and its remote copy have drifted apart, and ships
+two Pandoc filters for compiling Markdown into Canvas-ready HTML.
 
-
-Getting Started
----------------
-
-You will need to configure tent-pole with an API key (see instructions to
-[Add Access Token](https://community.canvaslms.com/t5/Admin-Guide/How-do-I-manage-API-access-tokens->
-This is done via
-a TOML file which can be either in the current working directory, or
-in your user configuration path (see
-https://pypi.org/project/appdirs/). Or in both places.
-
-```
-[general]
-api_key = "put-your-api-key-in-here"
-```
+Requirements: Python >= 3.14. Optional: Pandoc, if using the filters.
 
 
-Tent-pole uses a subcommand structure. So, for example, to push a page
-to blackboard.
-
-```
-tent-pole.py --course=23212 page push ./dev/test-1.html
-Pushed:./dev/test-1.html as test-1
-```
-
-Pandoc filters
---------------
-
-Tent-Pole also ships two pandoc filters that both understand the same
-`include=`/`output=`/`stout=`/`crash=` code-block syntax:
-
-- `canvas-filter` resolves it into pre-rendered, self-contained HTML
-  for pushing to a Canvas page.
-- `code-include-filter` resolves it into a plain code block instead,
-  for building static output (slides, PDF, standalone HTML) where
-  pandoc itself should do the syntax highlighting per output format.
-
-
-Cheat Sheet
+Installation
 ------------
 
-course
-- data - Return some information about a course
-    - E.g. `python3 tent-pole.py course data 14565`
-- modules - Return list of modules in a course
-    - E.g. `python3 tent-pole.py course modules 14565`
-- files - Return list of modules in a course
-    - E.g. `python3 tent-pole.py course files 14565`
-- Could be collated?
-    - pages - Return list of pages in a course
-    - assignments - Return list of assignments in a course
-    - quizzes - Return list of quizzes in a course
-    - discussions - Return list of discussions in a course
+With [Poetry](https://python-poetry.org/):
+
+```
+poetry install
+poetry run tent-pole --help
+```
+
+To install a `tent-pole` binary onto your `PATH` outside of the Poetry
+virtualenv:
+
+```
+./local-install.sh
+```
+
+For quick local use without installing anything, `tent-pole.py` in the
+repository root is an equivalent entry point:
+
+```
+python3 tent-pole.py --help
+```
 
 
-module
-- data - Return some information about a module
-    - E.g. `python3 tent-pole.py -c=14565 module data TODO`
-    - E.g. `python3 tent-pole.py -c=14565 module data 197477`
-- list - Return list of items in a module
-    - E.g. `python3 tent-pole.py -c=14565 module list TODO`
-- delete - Deletes module from a course (should be at the course level?)
-    - E.g. `python3 tent-pole.py -c=14565 module delete TEST`
-- create - Creates a module to course, even if it already exists (should be at the course level?)
-    - E.g. `python3 tent-pole.py -c=14565 module create TEST`
-- addpage - Adds page to a module, optional indent argument (0 to 5)
-    - E.g. `python3 tent-pole.py -c=14565 module addpage TEST test1`
-    - E.g. `python3 tent-pole.py -c=14565 module addpage TEST test1 1`
-- addhead - Adds sub header to a module, optional indent argument (0 to 5)
-    - E.g. `python3 tent-pole.py -c=14565 module addhead TEST "Formative Exercises"`
-    - E.g. `python3 tent-pole.py -c=14565 module addhead TEST "Formative Exercises" 1`
-- addfile - Adds file to a module, optional indent argument (0 to 5)
-    - E.g. `python3 tent-pole.py -c=14565 module addfile TEST 3203386`
-    - E.g. `python3 tent-pole.py -c=14565 module addfile TEST 3203386 1`
-- TODO publish - Publish a module on a course
-- TODO remove - Removes item (e.g. page) from a course
-- TODO reorder - Reorder the Modules?
-- TODO update - Update module details (and items?)
+Configuration
+--------------
+
+Tent-pole reads settings from `tent-pole.toml` files, cascaded from two
+places:
+
+- `tent-pole.toml` in your user config directory (see
+  [appdirs](https://pypi.org/project/appdirs/); typically
+  `~/.config/tent-pole/tent-pole.toml` on Linux) -- for settings that
+  hold across every course, such as your API key.
+- Every `tent-pole.toml` between the current directory and the nearest
+  enclosing `.git` root (inclusive), root-most first -- so a course
+  repo can set `course.id` once at its root and have every subproject
+  directory inherit it, overriding only what a deeper directory needs
+  to override.
+
+Files are deep-merged in that order, closest-to-cwd wins on a
+conflicting key, and a table's list value is *replaced* by a closer
+file rather than concatenated with it (so a subdirectory's `module`
+items never end up appended to an ancestor's).
+
+A minimal user config:
+
+```toml
+[general]
+api_key = "put-your-api-key-in-here"
+api_url = "https://your-institution.instructure.com"   # optional; see below
+
+[course]
+id = "23212"
+```
+
+- `api_url` defaults to `https://ncl.instructure.com` if omitted.
+- The course can also be set per-invocation with `-c`/`--course`
+  (accepts a numeric id, a course code, or a name), e.g.
+  `tent-pole -c=23212 page push ./page.html`. Note: use the `-c=VALUE`
+  form (or `--course=VALUE`); a space-separated `-c VALUE` is currently
+  mis-parsed.
+
+### Beta / test targets
+
+To point every Canvas call at a separate sandbox instance instead of
+`[general]`/`[course]` -- useful for rehearsing a push before it hits
+the real course -- add a `[dev]` section to your user config:
+
+```toml
+[dev]
+test_course_id = "my sandbox course"
+test_api_url = "https://your-institution.beta.instructure.com"
+test_api_key = "..."   # a token generated by logging into the beta
+                        # instance directly -- production tokens are
+                        # usually not valid there
+```
+
+and either pass `--beta` on the command line, or set `beta = true` at
+the top level of a `tent-pole.toml` (e.g. so a Makefile always builds
+against beta), or export `TENT_POLE_USE_TEST_CONFIG=1` in the
+environment. `--beta` takes priority over `-c`/`--course`.
 
 
-page
-- data - Return some information about a page
-    - E.g. `python3 tent-pole.py -c=14565 page data test1`
-    - E.g. `python3 tent-pole.py -c=14565 page data "Module Forms"`
-- Create - Create a page that does not exist, throws error if it does
-    - E.g. `python3 tent-pole.py -c=14565 page create test.html`
-- TODO Dump - Dump information to a local file (what is a .ttp file)?
-- update - Update an existing page that exists
-    - E.g. `python3 tent-pole.py -c=14565 page update test.html`
-- Push - Create or Update a page
-    - E.g. `python3 tent-pole.py -c=14565 page push test.html`
+Command Reference
+------------------
+
+Tent-pole uses a subcommand structure: `tent-pole <group> <command>
+[args]`.
+
+### config
+
+- `api-key` -- print the configured API key
+- `course` -- print the configured course identifier
+- `dump` -- print the fully merged configuration
+
+### course
+
+- `data <course>` -- print information about a course
+- `modules <course>` / `pages <course>` / `files <course>` /
+  `assignments <course>` / `quizzes <course>` / `discussions <course>`
+  -- list that kind of content in a course
+
+`<course>` accepts a numeric id, a course code (exact match), or a
+name (substring match).
+
+### module
+
+- `data <module>` -- print information about a module
+- `list <module>` -- list items in a module
+- `create [name]` -- create a module, unless one with that exact name
+  already exists (falls back to the configured module if `name` is
+  omitted)
+- `delete <module>` -- delete a module, with a y/n confirmation prompt
+- `addpage <module> <page-url> [indent]` -- add a page to a module
+- `addhead <module> <title> [indent]` -- add a sub-header to a module
+- `addfile <module> <file-id> [indent]` -- add a file to a module
+- `reorder` -- delete every item in the configured module and recreate
+  it from the `[module] items` list in `tent-pole.toml` (see the
+  example in `dev/sample-course/tent-pole.toml`)
+
+`<module>` accepts a numeric id or a name (substring match).
+
+### page
+
+- `data <page-url>` -- print information about a page
+- `create <file>` -- create a page from a local file, erroring if a
+  page of that name already exists
+- `update <file>` -- push a local file's contents to an *existing*
+  page
+- `push <file>` -- create-or-update: the common case
+- `dump <file>` -- record the page's current remote state next to the
+  local file, as `<file minus extension>.tpp`
+- `check <file>` -- local-only: has `<file>` changed since it was
+  last pushed? (compares against the recorded `.tpp`)
+- `verify <file>` -- `check`, plus: was the page edited on Canvas by
+  someone else since the last push, or (for pages built with
+  `canvas-filter`) does its live compile-timestamp marker no longer
+  match what was recorded?
+
+The Canvas page name is derived from the file name: `page-1.html` ->
+`page-1` (underscores become hyphens).
+
+### file
+
+- `data <file>` -- print information about an uploaded file
+- `push <file>` -- upload/replace a file, into a fixed `tent-pole`
+  folder on Canvas (so "did tent-pole manage this" is a cheap check)
+- `dump <file>` -- record the file's current remote state as
+  `<file>.tpf`
+- `check <file>` -- local-only: has `<file>` changed since it was
+  last pushed?
+- `verify [--deep] <file>` -- `check`, plus: has the remote file's
+  size changed? `--deep` downloads and hashes the remote file instead,
+  for a byte-exact comparison.
+
+`file push`/`dump` and `page push`/`dump` are meant to be run as a
+pair -- see the Pandoc filters below, which read the `.tpf` sidecar
+files back in to resolve links, images and embeds.
 
 
-file
-- data - Return some information about a file
-    - E.g. `python3 tent-pole.py -c=14565 file date python.zip`
-- dump - Dump information to a local file (what is a .tpf file)?
-- push - Create or Update a file, it is found in the unfiled directory
-    - E.g. `python3 tent-pole.py -c=14565 file push tent-pole.py`
+Pandoc Filters
+---------------
+
+Course content is normally written as Markdown and compiled through
+Pandoc. Tent-pole ships two filters that both understand the same
+`{include=... output=... stout=... crash=...}` code-block attributes:
+
+- `canvas-filter` resolves a Markdown document into self-contained
+  HTML meant for `tent-pole page push`: local images and links become
+  Canvas API URLs (looked up via the matching `.tpf` file, so `file
+  push`/`dump` must be run first), `.mp4` links become an embedded
+  media player, and the result carries a hidden compile-timestamp
+  marker that `page verify` checks against later.
+- `code-include-filter` resolves the same syntax with no Canvas API
+  access at all -- for building static output (slides, PDF, a
+  standalone HTML file to open in a browser) where Pandoc itself
+  should syntax-highlight per output format instead.
+
+A code block like:
+
+````
+```python {include=demo.py output=1 stout=1}
+```
+````
+
+is replaced by the contents of `demo.py` (syntax-highlighted), followed
+by "Outputs:" + the contents of `demo.out`, and "Prints:" + the
+contents of `demo.stout` -- each block optional depending on which of
+`include`/`output`/`stout`/`crash` is set. `output`/`stout`/`crash`
+read `<include minus extension>.out`/`.stout`/`.crash` respectively;
+producing those files (e.g. by actually running the script) is left to
+the caller -- see `dev/sample-course/Makefile` for the pattern.
+
+Typical pipeline for a course repo:
+
+```
+tent-pole file push demo.py && tent-pole file dump demo.py
+pandoc --filter=canvas-filter page.md > page.html
+tent-pole page push page.html && tent-pole page dump page.html
+```
 
 
-TODO Other files
-- assignment
-- quiz
-- discussion
-- externalurl
-TODO externaltool?
+Development
+------------
+
+`dev/sample-course/` is a standalone fixture exercising every
+Markdown/`canvas-filter` feature, for reviewing a push against a test
+Canvas instance by eye -- see its own `README.md`.
+
+```
+poetry install --with dev
+poetry run pytest              # unit tests; skips anything marked `canvas`
+poetry run pytest -m canvas    # also exercise a real Canvas sandbox course
+poetry run pre-commit run --all-files
+```
+
+
+License
+--------
+
+GNU Lesser General Public License v3 -- see `COPYING.lesser`.
