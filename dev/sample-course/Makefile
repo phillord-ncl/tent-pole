@@ -1,7 +1,9 @@
 ### -*- makefile -*-
 ### Pushes the markdown-feature test pages to a test Canvas instance.
 ### Mirrors the real course repos' make-inc/rules.inc pattern
-### (pandoc --filter=canvas-filter -> tent-pole page push/dump). See
+### (pandoc --filter=canvas-filter -> tent-pole page push/dump). Also
+### builds the same pages locally via code-include-filter (`make local`)
+### -- no Canvas API access needed, just opens in a browser. See
 ### README.md for setup.
 
 ## Targets [dev] test_* from the global tent-pole.toml, not [general].
@@ -9,6 +11,7 @@ export TENT_POLE_USE_TEST_CONFIG=1
 
 TENT_POLE=tent-pole
 CANVAS_FILTER=canvas-filter
+CODE_INCLUDE_FILTER=code-include-filter
 
 MD_SOURCES=$(filter-out README.md,$(wildcard *.md))
 TPP_FROM_MD=$(MD_SOURCES:%.md=%.tpp)
@@ -66,6 +69,16 @@ test-video.mp4.tpf: test-video.mp4
 
 pages: $(TPP_FROM_MD)
 
+## Same pages, run through code-include-filter instead of canvas-filter
+## -- no Canvas API access at all (no .tpf needed), so this can be
+## opened straight in a browser to check the include=/output=/stout=/
+## crash= syntax renders correctly through the other interpreter too,
+## without a round trip to the sandbox course.
+%.local.html: %.md demo.out repl_demo.stout crash_demo.crash test-image.png test-video.mp4
+	pandoc --self-contained --filter=$(CODE_INCLUDE_FILTER) $< -o $@
+
+local: $(MD_SOURCES:%.md=%.local.html)
+
 ## Once only -- re-running creates a second module of the same name.
 create-module:
 	$(TENT_POLE) module create "Markdown Feature Test"
@@ -77,4 +90,4 @@ clean:
 	rm -f *.html *.tpp *.tpf demo.out repl_demo.stout crash_demo.crash \
 	      test-image.png test-video.mp4
 
-.PHONY: all files pages create-module reorder clean
+.PHONY: all files pages local create-module reorder clean
