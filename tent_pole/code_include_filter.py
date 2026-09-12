@@ -1,6 +1,6 @@
-import os
-
 from panflute import *
+
+from .code_include_attrs import CodeIncludeAttrs
 
 
 def code_filter(elem, doc):
@@ -10,28 +10,27 @@ def code_filter(elem, doc):
     if type(elem) != CodeBlock:
         return None
 
-    include = elem.attributes.get("include")
-    if not include:
+    attrs = CodeIncludeAttrs.from_element(elem)
+    if not attrs.include:
         return None
 
-    with open(include) as fh:
+    with open(attrs.include) as fh:
         elem.text = fh.read()
 
     blocks = [elem]
-    name = os.path.splitext(include)[0]
 
-    if elem.attributes.get("output"):
-        with open(name + ".out") as fh:
+    if attrs.output:
+        with open(attrs.output_path) as fh:
             blocks.append(Para(Str("Outputs:")))
             blocks.append(CodeBlock(fh.read()))
 
-    if elem.attributes.get("stout"):
-        with open(name + ".stout") as fh:
+    if attrs.stout:
+        with open(attrs.stout_path) as fh:
             blocks.append(Para(Str("Prints:")))
             blocks.append(CodeBlock(fh.read()))
 
-    if elem.attributes.get("crash"):
-        with open(name + ".crash") as fh:
+    if attrs.crash:
+        with open(attrs.crash_path) as fh:
             blocks.append(Para(Str("Crashes:")))
             blocks.append(CodeBlock(fh.read()))
 

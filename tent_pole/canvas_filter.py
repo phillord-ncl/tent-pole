@@ -13,6 +13,7 @@ import pygments.util
 from panflute import *
 
 from . import config
+from .code_include_attrs import CodeIncludeAttrs
 
 COMPILED_AT_PATTERN = re.compile(r'data-compiled-at="([^"]*)"')
 
@@ -42,18 +43,15 @@ def highlight_source(text, lang):
 
 def code_filter(elem, doc):
     lang = len(elem.classes) > 0  and elem.classes[0]
-    include=elem.attributes.get("include")
-    output=elem.attributes.get("output")
-    stout=elem.attributes.get("stout")
-    crash=elem.attributes.get("crash")
+    attrs = CodeIncludeAttrs.from_element(elem)
 
-    if not include:
+    if not attrs.include:
         fd, path = tempfile.mkstemp(text=True)
         f = open(path, "w")
         f.write(elem.text)
         f.flush()
 
-    with open(include or path) as fh:
+    with open(attrs.include or path) as fh:
         content = fh.read()
 
     if lang:
@@ -61,41 +59,34 @@ def code_filter(elem, doc):
     else:
         highlighted = "<pre><code>" + content + "\n</code></pre>"
 
-    if not include:
+    if not attrs.include:
         f.close()
 
-    if include:
-        include_url = "../files/{}/download".format(str(tpf(include).get("id")))
+    if attrs.include:
+        include_url = "../files/{}/download".format(str(tpf(attrs.include).get("id")))
 
-    if output:
-        name = os.path.splitext(include)[0]
-        with open(name + ".out" ) as fh: output_text = fh.read()
-        fh.close()
+    if attrs.output:
+        with open(attrs.output_path) as fh: output_text = fh.read()
 
-    if stout:
-        name = os.path.splitext(include)[0]
-        with open(name + ".stout" ) as fh: stout_text = fh.read()
-        fh.close()
+    if attrs.stout:
+        with open(attrs.stout_path) as fh: stout_text = fh.read()
 
-    if crash:
-        name = os.path.splitext(include)[0]
-        with open(name + ".crash" ) as fh: crash_text = fh.read()
-        fh.close()
-
+    if attrs.crash:
+        with open(attrs.crash_path) as fh: crash_text = fh.read()
 
     return [i for i in
             [
                 RawBlock(highlighted),
-                include and Para(Link
+                attrs.include and Para(Link
                                  (Str("Take from: "
-                                      + os.path.basename(include)),
+                                      + os.path.basename(attrs.include)),
                                   url=include_url)),
-                output and Para(Str("Outputs:")),
-                output and CodeBlock(output_text),
-                stout and Para(Str("Prints:")),
-                stout and CodeBlock(stout_text),
-                crash and Para(Str("Crashes:")),
-                crash and CodeBlock(crash_text)
+                attrs.output and Para(Str("Outputs:")),
+                attrs.output and CodeBlock(output_text),
+                attrs.stout and Para(Str("Prints:")),
+                attrs.stout and CodeBlock(stout_text),
+                attrs.crash and Para(Str("Crashes:")),
+                attrs.crash and CodeBlock(crash_text)
             ]
             if i
         ]

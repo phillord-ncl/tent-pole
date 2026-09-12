@@ -24,6 +24,7 @@ pygments = "^2.19"
 tent-pole = "tent_pole.main:main"
 canvas-filter = "tent_pole.canvas_filter:main"
 code-include-filter = "tent_pole.code_include_filter:main"
+include-deps-filter = "tent_pole.include_deps_filter:main"
 
 
 [tool.poetry.group.dev.dependencies]

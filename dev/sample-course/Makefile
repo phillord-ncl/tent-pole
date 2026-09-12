@@ -29,10 +29,12 @@ include $(TENT_POLE_DIR)/make-rules/python/rules.inc
 ## true (as it isn't for README.md), this can be filtered or explicit
 MD_SOURCES=$(filter-out README.md,$(wildcard *.md))
 
-## TODO (feature/include-deps-filter, step 5): once the dependency-
-## extraction filter exists, `include $(MD_SOURCES:%.md=%.tpd)` here
-## replaces `files:` and the two extra-prerequisite lines below with
-## per-page generated dependencies -- see the plan.
+## Load the dependencies for these markdown files. These are
+## automatically generated (via rules.inc's %.tpd: %.md), so every
+## image/include=/link a page actually uses becomes a real
+## prerequisite of its %.html/%.full.html -- no more hand-listing
+## them below, and no more files:/create-module-style manual steps.
+include $(MD_SOURCES:%.md=%.tpd)
 
 all: pages
 
@@ -42,9 +44,6 @@ pages: $(MD_SOURCES:%.md=%.tpp)
 ## Full pages are self-contained local versions of files which are
 ## rather quicker to interact with than canvas and work offline.
 full: $(MD_SOURCES:%.md=%.full.html)
-
-## .tpf's needed before pandoc runs, since canvas-filter looks them up.
-files: demo.py.tpf test-image.png.tpf test-video.mp4.tpf repl_demo.py.tpf crash_demo.py.tpf
 
 ## The use of make means we can use any tools that we like to generate
 ## our files for later includsion. Not checked in -- generated so the
@@ -57,16 +56,6 @@ test-video.mp4:
 	       -f lavfi -i "sine=frequency=440:duration=2" \
 	       -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest -y $@
 
-## Extra prerequisites for the concrete .html/.full.html filenames --
-## Make merges these with rules.inc's %.html/%.full.html pattern rules
-## (which supply the actual recipe), but *only* because these name the
-## concrete files, not the pattern itself: a second %.html: ... stanza
-## would silently never be consulted (verified directly -- Make picks
-## one pattern rule per pattern, it doesn't merge across declarations
-## of the same one).
-$(MD_SOURCES:%.md=%.html): files demo.out repl_demo.stout crash_demo.crash
-$(MD_SOURCES:%.md=%.full.html): demo.out repl_demo.stout crash_demo.crash test-image.png test-video.mp4
-
 clean: clean-tp clean-py
 	rm -f test-image.png test-video.mp4
 
@@ -74,4 +63,4 @@ clean: clean-tp clean-py
 ## files.
 .DEFAULT_GOAL := all
 
-.PHONY: all files pages full clean
+.PHONY: all pages full clean

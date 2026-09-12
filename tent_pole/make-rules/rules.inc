@@ -11,12 +11,34 @@
 ## correctly.
 TENT_POLE_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))..)
 
+## GNU Make's default is to leave a target file in place after its own
+## recipe fails. Every rule here writes its target via shell
+## redirection, which creates the file before the command runs, so a
+## transient failure can leave a stale, empty file that a later run
+## then treats as up to date.
+.DELETE_ON_ERROR:
+
 ## TENT_POLE is NOT defaulted here -- the leaf Makefile's own bootstrap
 ## must already have set it, to find this very file in the first
 ## place. Unlike TENT_POLE_DIR above, MAKEFILE_LIST cannot recover
 ## this: it is a command name, not a path.
 CANVAS_FILTER ?= canvas-filter
 CODE_INCLUDE_FILTER ?= code-include-filter
+INCLUDE_DEPS_FILTER ?= include-deps-filter
+
+## Auto-generated Make dependencies for a single .md file -- the
+## include=/output=/stout=/crash= attributes on its code blocks, plus
+## any local image/file it embeds or links to. Named after its own
+## concrete stem, not the literal pattern % -- a second declaration of
+## the same pattern never merges with %.html/%.full.html above.
+## Deliberately not a co-target of %.html/%.tpf the way a C header's
+## %.d is a co-target of %.o: that only helps when a referenced file's
+## own content can change the dependency list, which never happens
+## here, since this only parses the .md file's own syntax. A leaf
+## Makefile's own `include $(MD_SOURCES:%.md=%.tpd)` (MD_SOURCES is
+## per-project, so that line cannot live here) is what pulls these in.
+%.tpd: %.md
+	$(INCLUDE_DEPS_FILTER) $< > $@
 
 %.tpf: %
 	$(TENT_POLE) file push $<
@@ -48,4 +70,4 @@ tent-pole.toml.tpm: tent-pole.toml
 reorder: tent-pole.toml.tpm
 
 clean-tp:
-	rm -f *.html *.tpp *.tpf
+	rm -f *.html *.tpp *.tpf *.tpd
