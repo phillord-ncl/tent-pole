@@ -280,3 +280,15 @@ def test_cli_dump_does_not_crash(monkeypatch):
     monkeypatch.setattr(config, "CONFIG", {"course": {"id": "12345"}})
     result = CliRunner().invoke(config.config, ["dump"])
     assert result.exit_code == 0, result.output
+
+
+def test_cli_api_url_prints_the_resolved_target(monkeypatch):
+    """So it's cheap to check the actual target -- beta or production
+    -- before any live command, not just the course."""
+    monkeypatch.delenv("TENT_POLE_USE_TEST_CONFIG", raising=False)
+    monkeypatch.setattr(
+        config, "CONFIG", {"general": {"api_url": "https://prod.example.com"}}
+    )
+    result = CliRunner().invoke(config.config, ["api-url"])
+    assert result.exit_code == 0, result.output
+    assert "prod.example.com" in result.output

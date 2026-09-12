@@ -150,3 +150,7 @@ def dump():
 @config.command()
 def course():
     print(config_course())
+
+@config.command(name="api-url")
+def api_url():
+    print(config_api_url())
