@@ -5,18 +5,19 @@
 ### on the leaf Makefile's own bootstrap having already set
 ### TENT_POLE_DIR -- not recomputed here.
 
+## Run python with the same working directory as the python file.
 %.out: %.py
-	python3 $< > $@
+	cd $(dir $<) && python3 $(notdir $<) > $(abspath $@)
 	echo " " >> $@
 
 %.crash: %.py
-	- python3 $< 2> $@
+	- cd $(dir $<) && python3 $(notdir $<) 2> $(abspath $@)
 
 %.stout: %.py
-	cat $< | $(TENT_POLE_DIR)/bin/python-shell > $@
+	cd $(dir $<) && cat $(notdir $<) | $(TENT_POLE_DIR)/bin/python-shell > $(abspath $@)
 
 %.test_out: %.py
-	- pytest $< > $@
+	- cd $(dir $<) && pytest $(notdir $<) > $(abspath $@)
 	echo " " >> $@
 
 Makefile-generated: Makefile $(wildcard *.py)
