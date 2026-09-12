@@ -1,3 +1,4 @@
+import toml
 from click.testing import CliRunner
 
 from tent_pole import file as tp_file
@@ -30,6 +31,24 @@ class FakeCourseForFile:
     def upload(self, filename, **kwargs):
         self.upload_calls.append((filename, kwargs))
         return True, {}
+
+
+class SlowlyResolvingCourse:
+    """A course whose one file's media_entry_id starts as "maybe" (as
+    Canvas returns right after a video upload, before it decides
+    whether to transcode) and resolves to a real id after a couple of
+    get_files() calls -- mimicking the real polling scenario --wait
+    exists for."""
+    def __init__(self, filename, resolves_after=2):
+        self.id = 999
+        self.filename = filename
+        self.calls = 0
+        self.resolves_after = resolves_after
+
+    def get_files(self):
+        self.calls += 1
+        media_entry_id = "maybe" if self.calls <= self.resolves_after else "m-real-id"
+        return [FakeCanvasFile(self.filename, media_entry_id=media_entry_id)]
 
 
 def write_local_file(path, content=b"file content"):
@@ -144,3 +163,36 @@ def test_push_uploads_into_the_tent_pole_folder(tmp_path, monkeypatch):
     assert uploaded_filename == local
     assert kwargs == {"parent_folder_path": tp_file.TENT_POLE_FOLDER}
     assert tp_file.TENT_POLE_FOLDER == "tent-pole"
+
+
+def test_dump_without_wait_does_not_poll(tmp_path, monkeypatch):
+    """--wait is opt-in: a plain dump writes immediately even if
+    media_entry_id is still "maybe", same as before this feature."""
+    local = write_local_file(tmp_path / "video.mp4")
+    canvas_file = FakeCanvasFile("video.mp4", media_entry_id="maybe")
+    fake_course = FakeCourseForFile([canvas_file])
+    monkeypatch.setattr(tp_file.course, "course_obj", lambda: fake_course)
+
+    runner = CliRunner()
+    result = runner.invoke(tp_file.file, ["dump", local])
+
+    assert result.exit_code == 0, result.output
+    with open(local + ".tpf") as fh:
+        recorded = toml.load(fh)
+    assert recorded["media_entry_id"] == "maybe"
+
+
+def test_dump_wait_polls_until_media_entry_id_resolves(tmp_path, monkeypatch):
+    local = write_local_file(tmp_path / "video.mp4")
+    fake_course = SlowlyResolvingCourse("video.mp4", resolves_after=2)
+    monkeypatch.setattr(tp_file.course, "course_obj", lambda: fake_course)
+    monkeypatch.setattr(tp_file.time, "sleep", lambda seconds: None)
+
+    runner = CliRunner()
+    result = runner.invoke(tp_file.file, ["dump", "--wait", local])
+
+    assert result.exit_code == 0, result.output
+    with open(local + ".tpf") as fh:
+        recorded = toml.load(fh)
+    assert recorded["media_entry_id"] == "m-real-id"
+    assert fake_course.calls == 3  # initial fetch + 2 retries before resolving

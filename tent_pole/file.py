@@ -1,5 +1,6 @@
 import click
 import os
+import time
 import toml
 
 from . import course
@@ -88,9 +89,18 @@ def data(filename):
 
 @file.command(help="Dump information to a local file.")
 @click.argument("filename")
-def dump(filename):
+@click.option("--wait", is_flag=True, help="Wait for the file's remote "
+              "state to fully resolve before writing the dump, polling "
+              "every 2s. Most useful for media, which returns a "
+              "placeholder until transcoding finishes.")
+def dump(filename, wait):
+    courseobj = course.course_obj()
+    data = __data(filename, course=courseobj)
+    while wait and data.get("media_entry_id") == "maybe":
+        time.sleep(2)
+        data = __data(filename, course=courseobj)
     with open(filename + ".tpf", "w") as fh:
-        toml.dump(__data(filename, course=course.course_obj()),fh)
+        toml.dump(data, fh)
 
 @file.command(help="Create or Update a file")
 @click.argument("filename")
