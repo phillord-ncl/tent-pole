@@ -36,8 +36,8 @@ make pages    # builds + pushes both markdown pages
 make full     # builds both pages via code-include-filter instead --
               # no Canvas access at all, just open *.full.html in a
               # browser
-make create-module   # once only -- creates the "Markdown Feature Test" module
-make reorder          # (re-)populates the module's item list
+make reorder  # creates the "Markdown Feature Test" module if it doesn't
+              # exist yet, then (re-)populates its item list
 ```
 
 `test-image.png` and `test-video.mp4` aren't checked in -- they're

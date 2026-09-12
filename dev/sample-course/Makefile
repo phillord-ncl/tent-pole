@@ -67,12 +67,6 @@ test-video.mp4:
 $(MD_SOURCES:%.md=%.html): files demo.out repl_demo.stout crash_demo.crash
 $(MD_SOURCES:%.md=%.full.html): demo.out repl_demo.stout crash_demo.crash test-image.png test-video.mp4
 
-## Once only -- re-running creates a second module of the same name.
-## TODO (feature/module-reorder, step 4): once reorder() gets-or-
-## creates the module itself, this target goes away entirely.
-create-module:
-	$(TENT_POLE) module create "Markdown Feature Test"
-
 clean: clean-tp clean-py
 	rm -f test-image.png test-video.mp4
 
@@ -80,4 +74,4 @@ clean: clean-tp clean-py
 ## files.
 .DEFAULT_GOAL := all
 
-.PHONY: all files pages full create-module clean
+.PHONY: all files pages full clean

@@ -1,13 +1,56 @@
 import canvasapi.exceptions
+import toml
 from click.testing import CliRunner
 
 from tent_pole import config, module
 
 
+class FakeModuleItem:
+    def __init__(self, id, type, position, indent=0, page_url=None, content_id=None):
+        self.id = id
+        self.type = type
+        self.position = position
+        self.indent = indent
+        self.page_url = page_url
+        self.content_id = content_id
+        self.edit_calls = []
+        self.deleted = False
+
+    def edit(self, **kwargs):
+        self.edit_calls.append(kwargs)
+        module_item = kwargs.get("module_item", {})
+        if "position" in module_item:
+            self.position = module_item["position"]
+        if "indent" in module_item:
+            self.indent = module_item["indent"]
+
+    def delete(self):
+        self.deleted = True
+
+
 class FakeModule:
-    def __init__(self, id=1, name="Module 1"):
+    def __init__(self, id=1, name="Module 1", items=None):
         self.id = id
         self.name = name
+        self._items = list(items) if items else []
+        self.create_module_item_calls = []
+
+    def get_module_items(self):
+        return list(self._items)
+
+    def create_module_item(self, module_item):
+        new_id = max([i.id for i in self._items], default=0) + 1
+        item = FakeModuleItem(
+            id=new_id,
+            type=module_item["type"],
+            position=module_item.get("position"),
+            indent=module_item.get("indent", 0),
+            page_url=module_item.get("page_url"),
+            content_id=module_item.get("content_id"),
+        )
+        self._items.append(item)
+        self.create_module_item_calls.append(module_item)
+        return item
 
 
 class FakeCourseForModule:
@@ -16,6 +59,7 @@ class FakeCourseForModule:
         self._get_module_result = get_module_result
         self._get_module_raises = get_module_raises
         self.created = None
+        self.created_module = None
 
     def get_modules(self):
         return self._modules
@@ -27,7 +71,8 @@ class FakeCourseForModule:
 
     def create_module(self, data):
         self.created = data
-        return FakeModule(name=data["name"])
+        self.created_module = FakeModule(name=data["name"])
+        return self.created_module
 
 
 class FakeCanvasForModule:
@@ -142,3 +187,122 @@ def test_create_does_not_treat_a_prefix_match_as_already_existing(monkeypatch):
 
     assert result.exit_code == 0, result.output
     assert fake_course.created == {"name": "Week 1"}
+
+
+## reorder -- get-or-create, then diff the item list against
+## tent-pole.toml instead of deleting and recreating everything.
+
+def test_reorder_creates_the_module_when_missing_then_its_items(monkeypatch):
+    fake_course = FakeCourseForModule(modules=[])
+    monkeypatch.setattr(module.course, "course_obj", lambda: fake_course)
+    monkeypatch.setattr(config, "config_module", lambda: "Week 1")
+    monkeypatch.setattr(config, "config_module_items", lambda: [{"id": "introduction"}])
+
+    result = CliRunner().invoke(module.reorder, [])
+
+    assert result.exit_code == 0, result.output
+    assert fake_course.created == {"name": "Week 1"}
+    assert "Created module: Week 1" in result.output
+    assert fake_course.created_module.create_module_item_calls == [
+        {"type": "Page", "page_url": "introduction", "indent": "0", "position": 1}
+    ]
+
+
+def test_reorder_edits_an_existing_item_in_place_without_deleting(monkeypatch):
+    """The whole point of the rewrite: an item that's already there,
+    just needing a position/indent change, gets edit()'d -- same id,
+    so any student completion state tracked against it survives --
+    rather than being deleted and recreated."""
+    existing = FakeModuleItem(id=99, type="Page", position=5, indent=0, page_url="introduction")
+    fake_module = FakeModule(id=1, name="Week 1", items=[existing])
+    fake_course = FakeCourseForModule(modules=[fake_module])
+    monkeypatch.setattr(module.course, "course_obj", lambda: fake_course)
+    monkeypatch.setattr(config, "config_module", lambda: "Week 1")
+    monkeypatch.setattr(config, "config_module_items",
+                         lambda: [{"id": "introduction", "indent": 1}])
+
+    result = CliRunner().invoke(module.reorder, [])
+
+    assert result.exit_code == 0, result.output
+    assert existing.deleted is False
+    assert existing.edit_calls == [
+        {"module_item": {"type": "Page", "page_url": "introduction", "indent": "1", "position": 1}}
+    ]
+    assert fake_module.create_module_item_calls == []
+
+
+def test_reorder_leaves_an_already_correct_item_untouched(monkeypatch):
+    existing = FakeModuleItem(id=99, type="Page", position=1, indent=0, page_url="introduction")
+    fake_module = FakeModule(id=1, name="Week 1", items=[existing])
+    fake_course = FakeCourseForModule(modules=[fake_module])
+    monkeypatch.setattr(module.course, "course_obj", lambda: fake_course)
+    monkeypatch.setattr(config, "config_module", lambda: "Week 1")
+    monkeypatch.setattr(config, "config_module_items", lambda: [{"id": "introduction"}])
+
+    result = CliRunner().invoke(module.reorder, [])
+
+    assert result.exit_code == 0, result.output
+    assert existing.edit_calls == []
+    assert existing.deleted is False
+
+
+def test_reorder_deletes_a_live_item_not_in_config(monkeypatch):
+    keep = FakeModuleItem(id=1, type="Page", position=1, indent=0, page_url="introduction")
+    remove = FakeModuleItem(id=2, type="Page", position=2, indent=0, page_url="old-page")
+    fake_module = FakeModule(id=1, name="Week 1", items=[keep, remove])
+    fake_course = FakeCourseForModule(modules=[fake_module])
+    monkeypatch.setattr(module.course, "course_obj", lambda: fake_course)
+    monkeypatch.setattr(config, "config_module", lambda: "Week 1")
+    monkeypatch.setattr(config, "config_module_items", lambda: [{"id": "introduction"}])
+
+    result = CliRunner().invoke(module.reorder, [])
+
+    assert result.exit_code == 0, result.output
+    assert keep.deleted is False
+    assert remove.deleted is True
+
+
+def test_reorder_silently_skips_a_config_item_of_unsupported_type(monkeypatch):
+    """Matches the pre-rewrite behaviour: an item type reorder() has no
+    branch for was (and still is) silently skipped, not an error."""
+    fake_module = FakeModule(id=1, name="Week 1", items=[])
+    fake_course = FakeCourseForModule(modules=[fake_module])
+    monkeypatch.setattr(module.course, "course_obj", lambda: fake_course)
+    monkeypatch.setattr(config, "config_module", lambda: "Week 1")
+    monkeypatch.setattr(config, "config_module_items",
+                         lambda: [{"type": "SubHeader", "id": "x"}])
+
+    result = CliRunner().invoke(module.reorder, [])
+
+    assert result.exit_code == 0, result.output
+    assert fake_module.create_module_item_calls == []
+
+
+## dump -- resolved module state as TOML, for the tent-pole.toml.tpm
+## staleness stamp.
+
+def test_dump_prints_module_state_as_toml(monkeypatch):
+    fake_module = FakeModule(id=7, name="Week 1", items=[])
+    fake_course = FakeCourseForModule(modules=[fake_module])
+    monkeypatch.setattr(module.course, "course_obj", lambda: fake_course)
+    monkeypatch.setattr(config, "config_module", lambda: "Week 1")
+    monkeypatch.setattr(config, "config_module_items", lambda: [{"id": "introduction"}])
+
+    result = CliRunner().invoke(module.dump, [])
+
+    assert result.exit_code == 0, result.output
+    parsed = toml.loads(result.output)
+    assert parsed["module_id"] == 7
+    assert parsed["name"] == "Week 1"
+    assert "hash" in parsed
+
+
+def test_dump_errors_when_module_not_found(monkeypatch):
+    fake_course = FakeCourseForModule(modules=[])
+    monkeypatch.setattr(module.course, "course_obj", lambda: fake_course)
+    monkeypatch.setattr(config, "config_module", lambda: "Week 1")
+
+    result = CliRunner().invoke(module.dump, [])
+
+    assert result.exit_code != 0
+    assert "not found" in result.output
