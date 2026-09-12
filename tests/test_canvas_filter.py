@@ -83,6 +83,48 @@ def test_link_filter_leaves_extensionless_local_links_unchanged():
     assert result.url == "some-page"
 
 
+def test_link_filter_resolves_page_link_to_its_dumped_real_url(tmp_path):
+    """See tent-pole issue #29: Canvas reserves a deleted page's slug
+    for undelete, so a page's real url can diverge from the name a
+    link was authored with. Its .tpp (written by page dump) records
+    the real url once it's known -- resolve to that rather than the
+    raw link text, same as an image/file link resolves via .tpf."""
+    page = tmp_path / "some-page"
+    write_tpp(page, {"url": "some-page-2"})
+
+    elem = pf.Link(pf.Str("x"), url=str(page))
+    result = canvas_filter.link_filter(elem, doc=None)
+
+    assert result.url == "some-page-2"
+
+
+def test_link_filter_resolves_page_link_with_fragment_to_its_dumped_real_url(tmp_path):
+    """A link to a specific heading (some-page#some-heading) needs
+    some-page.tpp, not some-page#some-heading.tpp -- the fragment
+    isn't part of the page's own url, and must survive onto the
+    resolved link."""
+    page = tmp_path / "some-page"
+    write_tpp(page, {"url": "some-page-2"})
+
+    elem = pf.Link(pf.Str("x"), url=str(page) + "#some-heading")
+    result = canvas_filter.link_filter(elem, doc=None)
+
+    assert result.url == "some-page-2#some-heading"
+
+
+def test_link_filter_leaves_page_link_unchanged_when_not_dumped_yet(tmp_path):
+    """No .tpp yet (e.g. the target's own first build hasn't run) --
+    a page-to-page link is deliberately not a .tpd build dependency,
+    so there's no ordering guarantee it exists. Falls back to the raw
+    link text, same as before this resolution existed at all."""
+    page = tmp_path / "not-dumped-yet"
+
+    elem = pf.Link(pf.Str("x"), url=str(page))
+    result = canvas_filter.link_filter(elem, doc=None)
+
+    assert result.url == str(page)
+
+
 def test_link_filter_mp4_becomes_video_iframe(tmp_path):
     video = tmp_path / "clip.mp4"
     write_tpf(video, {"media_entry_id": "m123"})

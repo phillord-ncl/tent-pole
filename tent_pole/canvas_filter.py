@@ -99,9 +99,25 @@ def link_filter(elem, doc):
 
     base, ext = os.path.splitext(elem.url)
 
-    ## If there is no extension, assume this is a local link, so take
-    ## it as it comes.
+    ## A link to another Canvas page (no extension). Resolve it to
+    ## that page's real url if it's been pushed+dumped already -- its
+    ## .tpp records pageobj.url (page.py's __resolve_page-corrected
+    ## real url), which can differ from the link text once Canvas has
+    ## ever reserved that slug for a deleted page's undelete (tent-pole
+    ## issue #29). Left as the raw link text, matching previous
+    ## behaviour, when the target hasn't been dumped yet -- a
+    ## page-to-page link is deliberately never a .tpd build dependency
+    ## (unlike an image/file link), so there's no ordering guarantee
+    ## that it has been.
     if ext == "":
+        ## Split off any #fragment (a link to a specific heading on
+        ## the target page) before looking up its .tpp -- the dumped
+        ## page is keyed by its own url alone, never url#fragment.
+        path, _, fragment = elem.url.partition("#")
+        tpp_path = path + ".tpp"
+        if os.path.exists(tpp_path):
+            real_url = toml.load(tpp_path).get("url", path)
+            elem.url = real_url + ("#" + fragment if fragment else "")
         return elem
 
     ## MP4 uses media player
