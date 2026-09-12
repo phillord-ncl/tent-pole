@@ -36,7 +36,7 @@ def __get_or_create_module(modulename, courseobj):
         return existing, False
     return courseobj.create_module({"name": modulename}), True
 
-def __desired_module_item(item, position):
+def __desired_module_item(item, position, courseobj):
     """(identity key, module_item dict) for one tent-pole.toml
     [module] items entry, or (None, None) for an item type reorder()
     doesn't know how to build -- silently skipped, same as before this
@@ -45,7 +45,16 @@ def __desired_module_item(item, position):
     itemtype = item.get("type", "Page")
     indent = str(item.get("indent", 0))
     if itemtype == "Page":
-        page_url = page.canvasname_from_path(item["id"])
+        canvasname = page.canvasname_from_path(item["id"])
+        ## The page's real url, not the assumed canvasname -- Canvas
+        ## reserves a deleted page's slug for undelete, so a page
+        ## that's ever been deleted and recreated can live at a
+        ## different url (comprehensions-and-operations-2, etc) than
+        ## its filename would suggest. Falls back to canvasname if the
+        ## page doesn't exist yet at all; Canvas will reject that with
+        ## its own clear error rather than silently misaddressing it.
+        found = page.__find_page(courseobj, canvasname)
+        page_url = found.url if found is not None else canvasname
         return ("Page", page_url), {
             "type": "Page", "page_url": page_url,
             "indent": indent, "position": position,
@@ -182,7 +191,7 @@ def reorder():
 
     matched_ids = set()
     for position, item in enumerate(required_items, start=1):
-        key, desired = __desired_module_item(item, position)
+        key, desired = __desired_module_item(item, position, courseobj)
         if key is None:
             continue
 

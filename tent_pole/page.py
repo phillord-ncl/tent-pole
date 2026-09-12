@@ -20,14 +20,26 @@ def __canvastitle_from_canvasname(canvasname):
 def __canvastitle_from_path(filename):
     return __canvas_title_from_canvasname(__canvasname_from_path(filename))
 
-def __page_exists(course, canvasname):
-    pages = course.get_pages()
+def __find_page(course, canvasname):
+    """The existing page for canvasname, if any. Tries Canvas's own
+    url lookup first (the common case, and all most callers/tests
+    need), falling back to a title search only if that misses --
+    Canvas disambiguates a title/slug that's ever been used before in
+    the course (even by a page since deleted) with -2, -3, etc, so a
+    page's real url can diverge from canvasname indefinitely once
+    that's happened once, and only a title search still finds it."""
+    try:
+        return course.get_page(canvasname)
+    except canvasapi.exceptions.ResourceDoesNotExist:
+        pass
     canvastitle = __canvastitle_from_canvasname(canvasname)
-    for page in pages:
-        if page.title==canvastitle:
-            return True
+    for page in course.get_pages():
+        if page.title == canvastitle:
+            return page
+    return None
 
-    return False
+def __page_exists(course, canvasname):
+    return __find_page(course, canvasname) is not None
 
 def __create_page(course,canvastitle):
     return course.create_page(
@@ -37,10 +49,24 @@ def __create_page(course,canvastitle):
     )
 
 def __get_create_page(course, canvasname):
-    if not __page_exists(course, canvasname):
-        __create_page(course,__canvastitle_from_canvasname(canvasname))
+    """The course's page for canvasname -- the actual Page object
+    found or just created, never re-fetched by guessing its url from
+    canvasname (see __find_page)."""
+    existing = __find_page(course, canvasname)
+    if existing is not None:
+        return existing
+    return __create_page(course, __canvastitle_from_canvasname(canvasname))
 
-    return course.get_page(canvasname)
+def __resolve_page(course, canvasname):
+    """Like __get_create_page, but for the read/update-only commands
+    below -- they need an existing page and should never create one,
+    so a miss is a clear error rather than a silent create."""
+    found = __find_page(course, canvasname)
+    if found is None:
+        raise click.ClickException(
+            "No page found for {!r} -- run push first".format(canvasname)
+        )
+    return found
 
 def page_by_title(pagetitle):
     try:
@@ -180,7 +206,7 @@ def __remote_drift(filename, recorded):
     problem, so an editor change and a compiled-at mismatch occurring
     together are both reported, not just whichever is checked first."""
     canvasname = canvasname_from_path(filename)
-    pageobj = course.course_obj().get_page(canvasname)
+    pageobj = __resolve_page(course.course_obj(), canvasname)
 
     return [
         p for p in (
@@ -194,7 +220,7 @@ def __remote_drift(filename, recorded):
 @click.argument("filename")
 def dump(filename):
     canvasname = canvasname_from_path(filename)
-    pageobj = course.course_obj().get_page(canvasname)
+    pageobj = __resolve_page(course.course_obj(), canvasname)
     with open(__tpp_path(filename), "w") as fh:
         toml.dump(__page_metadata(filename, pageobj), fh)
 
@@ -225,7 +251,7 @@ def verify(filename):
 def update(filename):
     with open(filename) as fh: body = fh.read()
     courseobj = course.course_obj()
-    page = courseobj.get_page(canvasname_from_path(filename))
+    page = __resolve_page(courseobj, canvasname_from_path(filename))
     page.edit(
         wiki_page={
             "body":body
@@ -244,4 +270,11 @@ def push(filename):
             "body": body
         }
     )
-    print("Pushed:{} as {}".format(filename, canvasname))
+    print("Pushed:{} as {}".format(filename, page.url))
+    if page.url != canvasname:
+        print(
+            "  note: {!r} was already taken (Canvas reserves a deleted "
+            "page's slug), landed on {!r} instead".format(
+                canvasname, page.url
+            )
+        )

@@ -53,6 +53,13 @@ class FakeModule:
         return item
 
 
+class FakePageForModule:
+    """Just enough of a Page for __find_page's fast path -- reorder()
+    only ever reads .url off whatever it finds."""
+    def __init__(self, url):
+        self.url = url
+
+
 class FakeCourseForModule:
     def __init__(self, modules=None, get_module_result=None, get_module_raises=None):
         self._modules = modules or []
@@ -60,6 +67,13 @@ class FakeCourseForModule:
         self._get_module_raises = get_module_raises
         self.created = None
         self.created_module = None
+
+    def get_page(self, url):
+        """Every page lives at the url its filename would suggest --
+        the common case reorder's own tests exercise. The slug-drift
+        case (Canvas reserving a deleted page's url) is page.py's own
+        test coverage, not reorder's."""
+        return FakePageForModule(url)
 
     def get_modules(self):
         return self._modules
