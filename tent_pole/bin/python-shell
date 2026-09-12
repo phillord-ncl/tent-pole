@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+
+import sys
+import code
+
+## Some environments (e.g. Ubuntu's apport crash reporter) replace
+## sys.excepthook -- when that happens, InteractiveInterpreter routes a
+## traceback through it directly instead of Shell.write() below, so it
+## goes straight to stderr and silently vanishes from a redirected
+## transcript. Pin it back to the default so this script's output is
+## deterministic regardless of the host's own customisation.
+sys.excepthook = sys.__excepthook__
+
+class Shell(code.InteractiveConsole):
+    def write(self, data):
+        print(data, end="")
+
+cons = Shell()
+
+file_contents = sys.stdin
+
+prompt = ">>> "
+
+for line in file_contents:
+    if( line.strip() == "" ):
+        print("")
+        ## or we will not get the end of indentation block
+        cons.push("")
+        prompt = ">>> "
+    else:
+        print(prompt + line,)
+        if cons.push(line.rstrip()):
+            prompt = "... "
+        else:
+            prompt = ">>> "

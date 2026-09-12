@@ -35,6 +35,12 @@ def main(course, beta):
         dpath.util.new(config.CONFIG, "course/identifier", "temp")
         dpath.util.set(config.CONFIG, "course/identifier", course[1:])
 
+@main.command(name="pkg-dir", help="Print the path to tent-pole's "
+              "installed package directory, e.g. for a downstream "
+              "Makefile to locate the shipped make-rules/ and bin/.")
+def pkg_dir():
+    print(os.path.dirname(__file__))
+
 main.add_command(config.config)
 main.add_command(course.course)
 main.add_command(file.file)

@@ -3,6 +3,11 @@ name = "tent-pole"
 version = "0.1.0"
 description = ""
 authors = ["Phillip Lord"]
+## Poetry's default packaging only picks up tent_pole/**/*.py -- these
+## are shipped Makefile fragments and support scripts, not Python
+## source, so they need an explicit include or they'd silently be
+## missing from the built wheel/sdist.
+include = ["tent_pole/make-rules/**/*", "tent_pole/bin/**/*"]
 
 [tool.poetry.dependencies]
 python = ">=3.14,<4.0"
