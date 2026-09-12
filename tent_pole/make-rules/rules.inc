@@ -26,6 +26,23 @@ CANVAS_FILTER ?= canvas-filter
 CODE_INCLUDE_FILTER ?= code-include-filter
 INCLUDE_DEPS_FILTER ?= include-deps-filter
 
+## Quiet by default (a short "  VERB     target" line instead of the
+## full command), same convention as Automake's `make V=1`: V=1 shows
+## the full command too, in addition to the short line rather than
+## instead of it -- full command visibility (exact paths/flags) is
+## genuinely needed for debugging, not just a fallback for distrust.
+## $(Q) must appear immediately after any leading -/@/+ recipe-prefix
+## character, never before it -- make checks those against the
+## already-macro-expanded recipe text, not literally the first
+## character of what's written here, but only once, so a second
+## leading modifier appearing after expansion is never re-checked.
+V ?= 0
+ifeq ($(V),1)
+Q =
+else
+Q = @
+endif
+
 ## Auto-generated Make dependencies for a single .md file -- the
 ## include=/output=/stout=/crash= attributes on its code blocks, plus
 ## any local image/file it embeds or links to. Named after its own
@@ -38,33 +55,42 @@ INCLUDE_DEPS_FILTER ?= include-deps-filter
 ## Makefile's own `include $(MD_SOURCES:%.md=%.tpd)` (MD_SOURCES is
 ## per-project, so that line cannot live here) is what pulls these in.
 %.tpd: %.md
-	$(INCLUDE_DEPS_FILTER) $< > $@
+	@echo "  DEPS     $<"
+	$(Q)$(INCLUDE_DEPS_FILTER) $< > $@
 
 %.tpf: %
-	$(TENT_POLE) file push $<
-	$(TENT_POLE) file dump --wait $<
+	@echo "  PUSH     $<"
+	$(Q)$(TENT_POLE) file push $<
+	@echo "  DUMP     $<"
+	$(Q)$(TENT_POLE) file dump --wait $<
 
 .PRECIOUS: %.html
 %.html: %.md
-	pandoc --filter=$(CANVAS_FILTER) $< > $@
+	@echo "  HTML     $<"
+	$(Q)pandoc --filter=$(CANVAS_FILTER) $< > $@
 
 %.tpp: %.html
-	$(TENT_POLE) page push $<
-	$(TENT_POLE) page dump $<
+	@echo "  PUSH     $<"
+	$(Q)$(TENT_POLE) page push $<
+	@echo "  DUMP     $<"
+	$(Q)$(TENT_POLE) page dump $<
 
 ## Self-contained, viewable outside Canvas. Not called ".local.html" --
 ## the point isn't "local" vs "remote", it's that this is a full,
 ## standalone document, unlike canvas-filter's bare fragment meant for
 ## Canvas's own page wrapper.
 %.full.html: %.md
-	pandoc --self-contained --filter=$(CODE_INCLUDE_FILTER) $< -o $@
+	@echo "  FULL     $<"
+	$(Q)pandoc --self-contained --filter=$(CODE_INCLUDE_FILTER) $< -o $@
 
 ## No separate create-module target -- reorder gets-or-creates the
 ## module itself, so this is the only step ever needed, even on a
 ## completely fresh course.
 tent-pole.toml.tpm: tent-pole.toml
-	$(TENT_POLE) module reorder
-	$(TENT_POLE) module dump > $@
+	@echo "  REORDER  $<"
+	$(Q)$(TENT_POLE) module reorder
+	@echo "  DUMP     $<"
+	$(Q)$(TENT_POLE) module dump > $@
 
 .PHONY: reorder
 reorder: tent-pole.toml.tpm

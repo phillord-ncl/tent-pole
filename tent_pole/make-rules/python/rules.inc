@@ -7,21 +7,26 @@
 
 ## Run python with the same working directory as the python file.
 %.out: %.py
-	cd $(dir $<) && python3 $(notdir $<) > $(abspath $@)
-	echo " " >> $@
+	@echo "  RUN      $<"
+	$(Q)cd $(dir $<) && python3 $(notdir $<) > $(abspath $@)
+	$(Q)echo " " >> $@
 
 %.crash: %.py
-	- cd $(dir $<) && python3 $(notdir $<) 2> $(abspath $@)
+	@echo "  CRASH    $<"
+	- $(Q)cd $(dir $<) && python3 $(notdir $<) 2> $(abspath $@)
 
 %.stout: %.py
-	cd $(dir $<) && cat $(notdir $<) | $(TENT_POLE_DIR)/bin/python-shell > $(abspath $@)
+	@echo "  REPL     $<"
+	$(Q)cd $(dir $<) && cat $(notdir $<) | $(TENT_POLE_DIR)/bin/python-shell > $(abspath $@)
 
 %.test_out: %.py
-	- cd $(dir $<) && pytest $(notdir $<) > $(abspath $@)
-	echo " " >> $@
+	@echo "  TEST     $<"
+	- $(Q)cd $(dir $<) && pytest $(notdir $<) > $(abspath $@)
+	$(Q)echo " " >> $@
 
 Makefile-generated: Makefile $(wildcard *.py)
-	python3 $(TENT_POLE_DIR)/bin/generate_makefile.py > Makefile-generated
+	@echo "  GEN      $@"
+	$(Q)python3 $(TENT_POLE_DIR)/bin/generate_makefile.py > Makefile-generated
 
 clean-py:
 	rm -f *.pyc *.out *.crash *.stout *.test_out Makefile-generated
