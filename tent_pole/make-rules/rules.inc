@@ -96,6 +96,32 @@ endif
 	@echo "  FULL     $<"
 	$(Q)pandoc --self-contained --filter=$(CODE_INCLUDE_FILTER) $< -o $@
 
+## A .quiz.md file is authored quite differently from an ordinary
+## page (see tent-pole issue #14), but is still a plain `*.md` file as
+## far as a shell glob is concerned -- a leaf Makefile's own
+## `MD_SOURCES = $(wildcard *.md)` will happily sweep up a `.quiz.md`
+## file too, pushing it as an ordinary page. A leaf Makefile mixing
+## both content types in one directory needs to filter its own
+## MD_SOURCES (e.g. `$(filter-out %.quiz.md,$(wildcard *.md))`)
+## alongside its own `QUIZ_SOURCES = $(wildcard *.quiz.md)` -- neither
+## variable is declared here, same as MD_SOURCES never has been.
+##
+## push already both creates-or-updates and writes its own stamp, so
+## unlike a page there's no separate dump step needed here.
+%.tpq: %.quiz.md
+	@echo "  QUIZ     $<"
+	$(Q)$(TENT_POLE) quiz push $<
+
+## More specific (shorter stem) than %.full.html: %.md above, so make
+## prefers this one for an actual .quiz.md file -- same precedent as
+## %.mp4.tpf: %.mp4 above. Reuses %.full.html's own recipe body
+## verbatim: plain pandoc already renders a .quiz.md file's headers/
+## checkboxes/code correctly for a human preview, the same way it does
+## for an ordinary page -- no new preview-side code needed.
+%.quiz.full.html: %.quiz.md
+	@echo "  FULL     $<"
+	$(Q)pandoc --self-contained --filter=$(CODE_INCLUDE_FILTER) $< -o $@
+
 ## No separate create-module target -- reorder gets-or-creates the
 ## module itself, so this is the only step ever needed, even on a
 ## completely fresh course.
@@ -109,4 +135,4 @@ tent-pole.toml.tpm: tent-pole.toml
 reorder: tent-pole.toml.tpm
 
 clean-tp:
-	rm -f *.html *.tpp *.tpf *.tpd *.tpm
+	rm -f *.html *.tpp *.tpf *.tpd *.tpm *.tpq
