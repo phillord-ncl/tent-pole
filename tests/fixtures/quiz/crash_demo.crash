@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/phillord/src/python/tent-pole/feature/quiz-markdown/tests/fixtures/quiz/crash_demo.py", line 5, in <module>
+    print(divide(10, 0))
+          ~~~~~~^^^^^^^
+  File "/home/phillord/src/python/tent-pole/feature/quiz-markdown/tests/fixtures/quiz/crash_demo.py", line 2, in divide
+    return a / b
+           ~~^~~
+ZeroDivisionError: division by zero
