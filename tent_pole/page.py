@@ -260,10 +260,26 @@ def update(filename):
 
 @page.command(help="Create or Update a page")
 @click.argument("filename")
-def push(filename):
+@click.option("--force", is_flag=True, help="Push even if the remote "
+              "page has drifted since the last push/dump (someone "
+              "else edited it since, or its content no longer matches "
+              "what tent-pole last saw there).")
+def push(filename, force):
     with open(filename) as fh: body = fh.read()
     courseobj = course.course_obj()
     canvasname = canvasname_from_path(filename)
+
+    ## Only a page pushed before has a baseline to drift from -- a
+    ## first-ever push has nothing to compare against (and __load_tpp
+    ## would itself raise "run push first", which would make pushing
+    ## for the first time impossible).
+    if not force and os.path.exists(__tpp_path(filename)):
+        problems = __remote_drift(filename, __load_tpp(filename))
+        if problems:
+            raise click.ClickException(
+                "; ".join(problems) + " -- use --force to overwrite anyway"
+            )
+
     page = __get_create_page(courseobj, canvasname)
     page.edit (
         wiki_page = {
