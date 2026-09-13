@@ -15,7 +15,17 @@ def canvasname_from_path(filename):
     )[0].replace("_", "-")
 
 def __canvastitle_from_canvasname(canvasname):
-    return stringcase.titlecase(canvasname)
+    ## stringcase.titlecase treats every capital-letter boundary as a
+    ## new word when nothing else separates them, mangling an
+    ## all-caps, no-separator segment into single letters with spaces
+    ## between (README -> "R E A D M E"). Leave such a segment as-is;
+    ## every other segment (canvasname_from_path already replaced
+    ## underscores with hyphens) still goes through titlecase exactly
+    ## as before.
+    return " ".join(
+        segment if segment.isupper() else stringcase.titlecase(segment)
+        for segment in canvasname.split("-")
+    )
 
 def __canvastitle_from_path(filename):
     return __canvas_title_from_canvasname(__canvasname_from_path(filename))

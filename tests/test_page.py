@@ -15,6 +15,27 @@ def test_canvasname_from_path_no_extension():
     assert page.canvasname_from_path("README") == "README"
 
 
+def test_canvastitle_leaves_all_caps_segment_alone():
+    """Regression: stringcase.titlecase treats every capital-letter
+    boundary as a new word when nothing else separates them, mangling
+    README into "R E A D M E" -- confirmed live, 2026-09-09."""
+    assert page.__canvastitle_from_canvasname("README") == "README"
+
+
+def test_canvastitle_leaves_all_caps_segment_alone_among_others():
+    assert (
+        page.__canvastitle_from_canvasname("my-README-file")
+        == "My README File"
+    )
+
+
+def test_canvastitle_still_titlecases_non_all_caps_segments():
+    assert (
+        page.__canvastitle_from_canvasname("comprehensions-and-operations")
+        == "Comprehensions And Operations"
+    )
+
+
 class FakePage:
     def __init__(self, page_id=1, url="test-1", title="Test 1",
                  updated_at="2026-01-01T00:00:00Z", last_edited_by=None,
