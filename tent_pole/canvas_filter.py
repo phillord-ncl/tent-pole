@@ -97,6 +97,28 @@ def link_filter(elem, doc):
     if bool(parsed.netloc) or bool(parsed.scheme):
         return elem
 
+    ## A link to a quiz: checked before the generic page-link branch
+    ## below, since os.path.splitext only ever strips the *last*
+    ## extension -- "something.quiz.md" still splits to ext ".md",
+    ## which would otherwise be caught there first and resolved
+    ## against a .tpp that will never exist for a quiz. Confirmed by
+    ## reading the real code, not assumed. Resolve directly to the
+    ## quiz's own .tpq-recorded html_url -- already absolute, unlike a
+    ## page's relative slug, so no further resolution is needed. Any
+    ## #fragment is dropped: a quiz has no addressable internal
+    ## headings the way a page does. Falls back to the bare local path
+    ## (matching the page branch's own behaviour) when the target
+    ## hasn't been pushed yet -- like page-to-page links, a
+    ## page-to-quiz link is deliberately never a .tpd build dependency.
+    path, _, fragment = elem.url.partition("#")
+    if path.endswith(".quiz.md"):
+        tpq_path = os.path.splitext(path)[0] + ".tpq"
+        elem.url = (
+            toml.load(tpq_path).get("html_url", path)
+            if os.path.exists(tpq_path) else path
+        )
+        return elem
+
     base, ext = os.path.splitext(elem.url)
 
     ## A link to another Canvas page: either bare (no extension -- the
@@ -114,11 +136,9 @@ def link_filter(elem, doc):
     ## dependency (unlike an image/file link), so there's no ordering
     ## guarantee that it has been.
     if ext in ("", ".md", ".html"):
-        ## Split off any #fragment (a link to a specific heading on
-        ## the target page) before deriving its .tpp -- the dumped
-        ## page is keyed by its own url alone, never url#fragment, and
-        ## never with a .md/.html suffix either.
-        path, _, fragment = elem.url.partition("#")
+        ## path/fragment already split off above -- the dumped page is
+        ## keyed by its own url alone, never url#fragment, and never
+        ## with a .md/.html suffix either.
         page_path = os.path.splitext(path)[0]
         tpp_path = page_path + ".tpp"
         real_url = (

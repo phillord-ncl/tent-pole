@@ -1,4 +1,5 @@
 import datetime
+import os
 
 import panflute as pf
 import toml
@@ -13,6 +14,12 @@ def write_tpf(path, data):
 
 def write_tpp(path, data):
     with open(str(path) + ".tpp", "w") as fh:
+        toml.dump(data, fh)
+
+
+def write_tpq(quiz_md_path, data):
+    tpq_path = os.path.splitext(str(quiz_md_path))[0] + ".tpq"
+    with open(tpq_path, "w") as fh:
         toml.dump(data, fh)
 
 
@@ -137,6 +144,49 @@ def test_link_filter_resolves_page_link_with_fragment_to_its_dumped_real_url(tmp
     result = canvas_filter.link_filter(elem, doc=None)
 
     assert result.url == "some-page-2#some-heading"
+
+
+def test_link_filter_resolves_quiz_md_link_to_its_pushed_html_url(tmp_path):
+    """A .quiz.md link must never fall into the page branch above --
+    os.path.splitext only strips the last extension, so
+    "some-quiz.quiz.md" still has ext ".md" and would otherwise match
+    there first, resolving against a .tpp that will never exist for a
+    quiz (tent-pole quiz feature, issue #14)."""
+    quiz_md = tmp_path / "some-quiz.quiz.md"
+    write_tpq(quiz_md, {"html_url": "https://example.test/courses/1/quizzes/99"})
+
+    elem = pf.Link(pf.Str("x"), url=str(quiz_md))
+    result = canvas_filter.link_filter(elem, doc=None)
+
+    assert result.url == "https://example.test/courses/1/quizzes/99"
+
+
+def test_link_filter_drops_fragment_on_quiz_md_link(tmp_path):
+    """A quiz has no addressable internal headings the way a page
+    does -- any #fragment is simply discarded, not preserved."""
+    quiz_md = tmp_path / "some-quiz.quiz.md"
+    elem = pf.Link(pf.Str("x"), url=str(quiz_md) + "#some-heading")
+    result = canvas_filter.link_filter(elem, doc=None)
+    assert result.url == str(quiz_md)
+
+
+def test_link_filter_leaves_quiz_md_link_unchanged_when_not_pushed_yet(tmp_path):
+    elem = pf.Link(pf.Str("x"), url=str(tmp_path / "not-pushed-yet.quiz.md"))
+    result = canvas_filter.link_filter(elem, doc=None)
+    assert result.url == str(tmp_path / "not-pushed-yet.quiz.md")
+
+
+def test_link_filter_ordinary_md_link_unaffected_by_quiz_md_check(tmp_path):
+    """Regression guard: the new .endswith(".quiz.md") check must not
+    misfire on a plain page link that merely happens to end in a
+    similar-looking way."""
+    page = tmp_path / "not-actually-a-quiz"
+    write_tpp(page, {"url": "not-actually-a-quiz-2"})
+
+    elem = pf.Link(pf.Str("x"), url=str(page) + ".md")
+    result = canvas_filter.link_filter(elem, doc=None)
+
+    assert result.url == "not-actually-a-quiz-2"
 
 
 def test_link_filter_leaves_page_link_unchanged_when_not_dumped_yet(tmp_path):
