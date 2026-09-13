@@ -13,6 +13,7 @@ import pygments.util
 from panflute import *
 
 from . import config
+from . import quiz_paths
 from .code_include_attrs import CodeIncludeAttrs
 
 COMPILED_AT_PATTERN = re.compile(r'data-compiled-at="([^"]*)"')
@@ -112,7 +113,7 @@ def link_filter(elem, doc):
     ## page-to-quiz link is deliberately never a .tpd build dependency.
     path, _, fragment = elem.url.partition("#")
     if path.endswith(".quiz.md"):
-        tpq_path = os.path.splitext(path)[0] + ".tpq"
+        tpq_path = quiz_paths.tpq_path(path)
         elem.url = (
             toml.load(tpq_path).get("html_url", path)
             if os.path.exists(tpq_path) else path

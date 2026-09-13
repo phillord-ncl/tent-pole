@@ -1,10 +1,9 @@
 import datetime
-import os
 
 import panflute as pf
 import toml
 
-from tent_pole import canvas_filter
+from tent_pole import canvas_filter, quiz_paths
 
 
 def write_tpf(path, data):
@@ -18,8 +17,7 @@ def write_tpp(path, data):
 
 
 def write_tpq(quiz_md_path, data):
-    tpq_path = os.path.splitext(str(quiz_md_path))[0] + ".tpq"
-    with open(tpq_path, "w") as fh:
+    with open(quiz_paths.tpq_path(str(quiz_md_path)), "w") as fh:
         toml.dump(data, fh)
 
 

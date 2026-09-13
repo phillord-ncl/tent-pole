@@ -7,10 +7,11 @@ import toml
 from . import course
 from . import manifest
 from . import quiz_parser
+from . import quiz_paths
 
 
 def __tpq_path(filename):
-    return os.path.splitext(filename)[0] + ".tpq"
+    return quiz_paths.tpq_path(filename)
 
 
 def __find_quiz(courseobj, title):
