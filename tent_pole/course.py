@@ -12,6 +12,11 @@ def course_by_name(coursename, canvas=None):
     ## restricted-access course is returned by get_courses() as a stub
     ## with only {id, access_restricted_by_date}, no name -- confirmed
     ## on a real account, see course_by_exact for the same pattern.
+    ## A falsy coursename (e.g. config_course() finding nothing
+    ## configured) must return None immediately -- `None in "..."`
+    ## raises TypeError, and an empty string would match every course.
+    if not coursename:
+        return None
     return next(
         (course for course in __get_courses(canvas)
          if coursename in getattr(course, "name", "")),
@@ -19,6 +24,13 @@ def course_by_name(coursename, canvas=None):
     )
 
 def course_by_code(coursecode, canvas=None):
+    ## A falsy coursecode must return None immediately -- otherwise
+    ## `None == getattr(course, "course_code", None)` matches the
+    ## first course lacking that attribute at all (e.g. a
+    ## restricted-access stub), a confusing wrong-course match one
+    ## step removed from "no course configured".
+    if not coursecode:
+        return None
     return next(
         (course for course in __get_courses(canvas)
          if coursecode == getattr(course, "course_code", None)),

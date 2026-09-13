@@ -62,6 +62,25 @@ def test_course_by_code_returns_none_when_not_found():
     assert course.course_by_code("NOPE", canvas=canvas) is None
 
 
+def test_course_by_name_returns_none_for_none_identifier():
+    """Regression: `None in getattr(course, "name", "")` raises
+    TypeError before this guard existed -- a course with no [course]
+    configured must fail cleanly, not crash."""
+    canvas = make_canvas()
+    assert course.course_by_name(None, canvas=canvas) is None
+
+
+def test_course_by_code_returns_none_for_none_identifier():
+    """Regression: `None == getattr(course, "course_code", None)`
+    matched the first course lacking that attribute at all (e.g. a
+    restricted-access stub) before this guard existed."""
+    canvas = FakeCanvas([
+        RestrictedFakeCourse(32443),
+        FakeCourse(16807, "npl25 Personal Sandbox", "npl25 Personal Sandbox"),
+    ])
+    assert course.course_by_code(None, canvas=canvas) is None
+
+
 def test_course_by_guess_numeric_id_as_string():
     canvas = make_canvas()
     found = course.course_by_guess("16807", canvas=canvas)
