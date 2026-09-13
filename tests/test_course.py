@@ -51,6 +51,26 @@ def test_course_by_name_returns_none_when_not_found():
     assert course.course_by_name("does not exist", canvas=canvas) is None
 
 
+def test_course_by_name_warns_on_ambiguous_match(capsys):
+    canvas = FakeCanvas([
+        FakeCourse(1, "CSC1034 (24/25)", "CSC1034 (24/25)"),
+        FakeCourse(2, "CSC1034 (25/26)", "CSC1034 (25/26)"),
+    ])
+    found = course.course_by_name("CSC1034", canvas=canvas)
+    assert found.id == 1
+
+    stderr = capsys.readouterr().err
+    assert "matched 2 courses" in stderr
+    assert "CSC1034 (24/25)" in stderr
+    assert "CSC1034 (25/26)" in stderr
+
+
+def test_course_by_name_no_warning_on_single_match(capsys):
+    canvas = make_canvas()
+    course.course_by_name("Personal Sandbox", canvas=canvas)
+    assert capsys.readouterr().err == ""
+
+
 def test_course_by_code_exact_match():
     canvas = make_canvas()
     found = course.course_by_code("CSC1034 (26/27)", canvas=canvas)

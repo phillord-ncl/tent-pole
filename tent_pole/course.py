@@ -17,11 +17,30 @@ def course_by_name(coursename, canvas=None):
     ## raises TypeError, and an empty string would match every course.
     if not coursename:
         return None
-    return next(
-        (course for course in __get_courses(canvas)
-         if coursename in getattr(course, "name", "")),
-        None
-    )
+    matches = [
+        c for c in __get_courses(canvas)
+        if coursename in getattr(c, "name", "")
+    ]
+    if len(matches) > 1:
+        ## course_by_exact raises on this same ambiguity for
+        ## config-driven lookups, where certainty matters more than
+        ## convenience. This substring fallback is for interactive CLI
+        ## use, where picking one and moving on is more useful than
+        ## refusing outright -- but the choice should be visible, not
+        ## silent, since which course it lands on depends on whatever
+        ## order Canvas happened to return them in.
+        click.echo(
+            "Warning: {!r} matched {} courses, using the first: {}".format(
+                coursename,
+                len(matches),
+                ", ".join(
+                    "{} ({})".format(getattr(c, "name", "?"), getattr(c, "id", "?"))
+                    for c in matches
+                ),
+            ),
+            err=True,
+        )
+    return matches[0] if matches else None
 
 def course_by_code(coursecode, canvas=None):
     ## A falsy coursecode must return None immediately -- otherwise
