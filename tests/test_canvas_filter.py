@@ -83,6 +83,33 @@ def test_link_filter_leaves_extensionless_local_links_unchanged():
     assert result.url == "some-page"
 
 
+def test_link_filter_treats_html_extensioned_link_as_page_reference():
+    """See tent-pole issue #23: a link spelled out with the target's
+    .html (or .md) is still a page reference, not a file attachment --
+    there is no intro.html.tpf, intro.html was never pushed via file
+    push, it's a page. Falls back to the bare name (extension
+    stripped), same as the no-extension form, when not dumped yet."""
+    elem = pf.Link(pf.Str("x"), url="intro.html")
+    result = canvas_filter.link_filter(elem, doc=None)
+    assert result.url == "intro"
+
+
+def test_link_filter_treats_md_extensioned_link_as_page_reference():
+    elem = pf.Link(pf.Str("x"), url="intro.md")
+    result = canvas_filter.link_filter(elem, doc=None)
+    assert result.url == "intro"
+
+
+def test_link_filter_resolves_html_extensioned_link_to_its_dumped_real_url(tmp_path):
+    page = tmp_path / "intro"
+    write_tpp(page, {"url": "intro-2"})
+
+    elem = pf.Link(pf.Str("x"), url=str(page) + ".html")
+    result = canvas_filter.link_filter(elem, doc=None)
+
+    assert result.url == "intro-2"
+
+
 def test_link_filter_resolves_page_link_to_its_dumped_real_url(tmp_path):
     """See tent-pole issue #29: Canvas reserves a deleted page's slug
     for undelete, so a page's real url can diverge from the name a
