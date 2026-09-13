@@ -272,9 +272,6 @@ def push(filename):
     )
     print("Pushed:{} as {}".format(filename, page.url))
     if page.url != canvasname:
-        print(
-            "  note: {!r} was already taken (Canvas reserves a deleted "
-            "page's slug), landed on {!r} instead".format(
-                canvasname, page.url
-            )
-        )
+        print("  {!r} was already taken, landed on {!r} instead".format(
+            canvasname, page.url
+        ))
