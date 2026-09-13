@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tent-pole"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = ["Phillip Lord"]
 ## Poetry's default packaging only picks up tent_pole/**/*.py -- these
