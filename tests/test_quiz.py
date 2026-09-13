@@ -152,8 +152,15 @@ def test_first_push_creates_quiz_and_writes_tpq(tmp_path, monkeypatch):
     weights = {a["answer_weight"] for a in payload["answers"]}
     assert weights == {0, 100}
     ## Real Canvas create input keys, confirmed live this session --
-    ## never the read-back shape (text/weight).
-    assert all("answer_text" in a and "answer_weight" in a for a in payload["answers"])
+    ## never the read-back shape (text/weight). Both answer_text and
+    ## answer_html on every answer, uniformly -- sending them
+    ## unevenly across a list of answers garbles Canvas's Rails-style
+    ## array form-encoding (confirmed live: fields from two different
+    ## answers ended up merged into one).
+    assert all(
+        {"answer_text", "answer_html", "answer_weight"} <= a.keys()
+        for a in payload["answers"]
+    )
 
     tpq_path = quiz.__tpq_path(str(target))
     assert os.path.exists(tpq_path)

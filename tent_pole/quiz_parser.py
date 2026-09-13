@@ -91,6 +91,23 @@ def render_html(blocks, api_version):
     return result.stdout.strip()
 
 
+def render_plain(blocks, api_version):
+    """Plain-text rendering of the same blocks, for answer_text -- an
+    answer's `text`/`html` are genuinely separate fields on Canvas
+    (confirmed live this session), and sending only one of the two
+    across a list of answers with heterogeneous keys garbles Canvas's
+    Rails-style array form-encoding (confirmed live: it merged two
+    answers' fields together). Every answer must carry the same keys,
+    so this is always sent alongside render_html's own answer_html."""
+    newdoc = pf.Doc(*blocks, api_version=api_version)
+    raw = json.dumps(newdoc.to_json())
+    result = subprocess.run(
+        ["pandoc", "-f", "json", "-t", "plain"],
+        input=raw, capture_output=True, text=True, check=True,
+    )
+    return result.stdout.strip()
+
+
 def _is_checkbox_item(item):
     if not item.content:
         return False
@@ -112,8 +129,12 @@ def _answer_from_item(item, api_version):
     rest = inlines[1:]
     if rest and isinstance(rest[0], pf.Space):
         rest = rest[1:]
-    text_html = render_html([pf.Plain(*rest)], api_version)
-    return {"answer_text": text_html, "answer_weight": weight}
+    rest_blocks = [pf.Plain(*rest)]
+    return {
+        "answer_text": render_plain(rest_blocks, api_version),
+        "answer_html": render_html(rest_blocks, api_version),
+        "answer_weight": weight,
+    }
 
 
 def _extract_answers(blocks, api_version):

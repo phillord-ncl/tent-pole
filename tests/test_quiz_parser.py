@@ -141,6 +141,8 @@ def test_question_groups_quiz_structure():
     correct = [a for a in q.answers if a["answer_weight"] == 100]
     assert len(correct) == 1
     assert "hello world" in correct[0]["answer_text"]
+    assert "hello world" in correct[0]["answer_html"]
+    assert all({"answer_text", "answer_html"} <= a.keys() for a in q.answers)
 
     assert second.name == "Is this a group that actually exists?"
     assert second.pick_count == "1"
