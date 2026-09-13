@@ -105,8 +105,33 @@ def config_api_url():
         return config_test_api_url()
     return get_maybe(CONFIG, "general/api_url") or DEFAULT_API_URL
 
+## Tracks the Requester behind the most recently created Canvas
+## connection, purely so a CanvasException's real response
+## (body/headers) can be recovered after the fact -- canvasapi's own
+## generic error branch discards both, keeping only the status code
+## (see main.cli). Requester already caches its last 5 responses
+## regardless of what any exception carries; this just keeps a handle
+## on which one to ask.
+##
+## Canvas stores its Requester under a name-mangled attribute
+## (_Canvas__requester, since Canvas's own __init__ sets self.__requester
+## from inside the class) -- unlike a Course/Page/etc, which get handed
+## the same Requester and store it as a plain _requester. Extracting it
+## here, once, keeps that private-attribute reliance in one place.
+_last_requester = None
+
 def config_canvas():
-    return Canvas(config_api_url(), config_api_key())
+    global _last_requester
+    canvas = Canvas(config_api_url(), config_api_key())
+    _last_requester = canvas._Canvas__requester
+    return canvas
+
+def last_response():
+    """The most recent raw HTTP response canvasapi received, if any."""
+    if _last_requester is None:
+        return None
+    cache = _last_requester._cache
+    return cache[0] if cache else None
 
 def config_current_user_id():
     """The Canvas user id tent-pole's own API key authenticates as --

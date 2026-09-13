@@ -282,6 +282,34 @@ def test_cli_dump_does_not_crash(monkeypatch):
     assert result.exit_code == 0, result.output
 
 
+## last_response: tent-pole's own recovery for the response detail
+## canvasapi's generic CanvasException discards (see main.cli).
+
+def test_config_canvas_tracks_its_requester_for_last_response(monkeypatch):
+    monkeypatch.setattr(
+        config, "CONFIG",
+        {"general": {"api_url": "https://example.com", "api_key": "k"}},
+    )
+    config.config_canvas()
+    config._last_requester._cache = ["most-recent-response", "older"]
+    assert config.last_response() == "most-recent-response"
+
+
+def test_last_response_none_when_no_canvas_created_yet(monkeypatch):
+    monkeypatch.setattr(config, "_last_requester", None)
+    assert config.last_response() is None
+
+
+def test_last_response_none_when_cache_empty(monkeypatch):
+    monkeypatch.setattr(
+        config, "CONFIG",
+        {"general": {"api_url": "https://example.com", "api_key": "k"}},
+    )
+    config.config_canvas()
+    config._last_requester._cache = []
+    assert config.last_response() is None
+
+
 def test_cli_api_url_prints_the_resolved_target(monkeypatch):
     """So it's cheap to check the actual target -- beta or production
     -- before any live command, not just the course."""
