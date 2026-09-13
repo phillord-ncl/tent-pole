@@ -96,4 +96,4 @@ tent-pole.toml.tpm: tent-pole.toml
 reorder: tent-pole.toml.tpm
 
 clean-tp:
-	rm -f *.html *.tpp *.tpf *.tpd
+	rm -f *.html *.tpp *.tpf *.tpd *.tpm
