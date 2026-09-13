@@ -6,6 +6,7 @@ from . import config
 from . import course
 from . import manifest
 from . import page
+from . import quiz
 
 def module_by_name(modulename):
     try:
@@ -60,8 +61,24 @@ def __desired_module_item(item, position, courseobj):
             "indent": indent, "position": position,
         }
     if itemtype == "Quiz":
-        return ("Quiz", item["id"]), {
-            "type": "Quiz", "content_id": item["id"],
+        ## item["id"] is a .quiz.md filename, matching how "Page"
+        ## above already takes a filename rather than a raw Canvas id
+        ## -- resolved via its .tpq (quiz push's own stamp file), the
+        ## same way a Page item resolves via .tpp/__find_page. Unlike
+        ## Page, there's no meaningful guessed fallback for a numeric
+        ## content_id when unpushed, so this errors instead of
+        ## silently misaddressing -- reorder should never implicitly
+        ## create a quiz.
+        recorded = quiz.__load_tpq(item["id"])
+        if recorded is None:
+            raise click.ClickException(
+                "No {} found for {!r} -- run quiz push first".format(
+                    quiz.__tpq_path(item["id"]), item["id"]
+                )
+            )
+        content_id = recorded["quiz_id"]
+        return ("Quiz", content_id), {
+            "type": "Quiz", "content_id": content_id,
             "indent": indent, "position": position,
         }
     return None, None

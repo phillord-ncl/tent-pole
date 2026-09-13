@@ -292,6 +292,48 @@ def test_reorder_silently_skips_a_config_item_of_unsupported_type(monkeypatch):
     assert fake_module.create_module_item_calls == []
 
 
+def test_reorder_resolves_quiz_item_by_filename_via_tpq(monkeypatch, tmp_path):
+    """Matches how a "Page" item already resolves by filename rather
+    than a raw Canvas id -- see tent-pole issue #14."""
+    quiz_md = tmp_path / "some-quiz.quiz.md"
+    with open(module.quiz.__tpq_path(str(quiz_md)), "w") as fh:
+        toml.dump({"quiz_id": 555}, fh)
+
+    fake_module = FakeModule(id=1, name="Week 1", items=[])
+    fake_course = FakeCourseForModule(modules=[fake_module])
+    monkeypatch.setattr(module.course, "course_obj", lambda: fake_course)
+    monkeypatch.setattr(config, "config_module", lambda: "Week 1")
+    monkeypatch.setattr(config, "config_module_items",
+                         lambda: [{"type": "Quiz", "id": str(quiz_md)}])
+
+    result = CliRunner().invoke(module.reorder, [])
+
+    assert result.exit_code == 0, result.output
+    assert fake_module.create_module_item_calls == [
+        {"type": "Quiz", "content_id": 555, "indent": "0", "position": 1}
+    ]
+
+
+def test_reorder_quiz_item_errors_when_not_pushed_yet(monkeypatch, tmp_path):
+    """No meaningful guessed content_id exists for a quiz the way a
+    page's canvasname is a meaningful guess -- errors clearly instead
+    of silently misaddressing a module item."""
+    quiz_md = tmp_path / "not-pushed-yet.quiz.md"
+
+    fake_module = FakeModule(id=1, name="Week 1", items=[])
+    fake_course = FakeCourseForModule(modules=[fake_module])
+    monkeypatch.setattr(module.course, "course_obj", lambda: fake_course)
+    monkeypatch.setattr(config, "config_module", lambda: "Week 1")
+    monkeypatch.setattr(config, "config_module_items",
+                         lambda: [{"type": "Quiz", "id": str(quiz_md)}])
+
+    result = CliRunner().invoke(module.reorder, [])
+
+    assert result.exit_code != 0
+    assert "run quiz push first" in result.output
+    assert fake_module.create_module_item_calls == []
+
+
 ## dump -- resolved module state as TOML, for the tent-pole.toml.tpm
 ## staleness stamp.
 
