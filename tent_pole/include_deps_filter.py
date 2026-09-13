@@ -47,7 +47,7 @@ def collect_deps(doc):
             attrs = CodeIncludeAttrs.from_element(elem)
             if attrs.include:
                 ## code_filter reads the raw file (for highlighting)
-                ## *and* looks up its .tpf (for the "Take from:" link).
+                ## *and* looks up its .tpf (for the "Taken from:" link).
                 ## code_include_filter only ever reads the raw file.
                 html_deps.append(attrs.include)
                 html_deps.append(attrs.include + ".tpf")

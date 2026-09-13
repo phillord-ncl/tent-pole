@@ -83,7 +83,7 @@ def test_code_with_include_and_output_attributes():
     directly and never exercise pandoc's real markdown parsing for this."""
     html = run_pandoc_filter("code-with-include.md")
     assert "<span" in html  # the included snippet.py, highlighted
-    assert "Take from: snippet.py" in html
+    assert "Taken from: snippet.py" in html
     assert "../files/55/download" in html  # from snippet.py.tpf's id
     assert "Outputs:" in html
     assert "hi" in html  # from snippet.out

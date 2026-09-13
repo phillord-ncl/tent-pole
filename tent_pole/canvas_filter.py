@@ -79,7 +79,7 @@ def code_filter(elem, doc):
             [
                 RawBlock(highlighted),
                 attrs.include and Para(Link
-                                 (Str("Take from: "
+                                 (Str("Taken from: "
                                       + os.path.basename(attrs.include)),
                                   url=include_url)),
                 attrs.output and Para(Str("Outputs:")),
