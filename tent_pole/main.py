@@ -11,6 +11,7 @@ from . import course
 from . import file
 from . import module
 from . import page
+from . import quiz
 
 
 logger = logging.getLogger("canvasapi")
@@ -47,6 +48,7 @@ main.add_command(course.course)
 main.add_command(file.file)
 main.add_command(module.module)
 main.add_command(page.page)
+main.add_command(quiz.quiz)
 
 def cli():
     """Console-script entry point (see pyproject.toml) -- Click's own
