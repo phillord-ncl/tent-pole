@@ -198,7 +198,7 @@ def reorder():
         candidates = live_by_key.get(key)
         liveitem = candidates.pop(0) if candidates else None
         if liveitem is None:
-            print("Creating {}: {}".format(desired["type"], item.get("id")))
+            print("Adding {} to module: {}".format(desired["type"], item.get("id")))
             mod.create_module_item(module_item=desired)
             continue
 
