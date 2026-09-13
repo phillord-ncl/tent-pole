@@ -62,6 +62,19 @@ endif
 	@echo "  PUSH     $<"
 	$(Q)$(TENT_POLE) file push $<
 	@echo "  DUMP     $<"
+	$(Q)$(TENT_POLE) file dump $<
+
+## Media needs --wait: Canvas returns a placeholder media_entry_id
+## until transcoding finishes, and canvas_filter's own mp4 handling
+## (an <iframe data-media-id=...>) needs the real one, not "maybe".
+## A more specific pattern (longer stem match) than the generic
+## %.tpf: % above, so make prefers this one for an actual .mp4 --
+## everything else keeps the plain dump, which was always a no-op for
+## a non-media file anyway (media_entry_id is never "maybe" for one).
+%.mp4.tpf: %.mp4
+	@echo "  PUSH     $<"
+	$(Q)$(TENT_POLE) file push $<
+	@echo "  DUMP     $<"
 	$(Q)$(TENT_POLE) file dump --wait $<
 
 .PRECIOUS: %.html
