@@ -159,9 +159,9 @@ def test_cascade_ignores_config_above_the_repo_boundary(tmp_path):
     assert merged == {}
 
 
-def test_config_api_url_falls_back_to_default(monkeypatch):
+def test_config_api_url_none_when_unset(monkeypatch):
     monkeypatch.setattr(config, "CONFIG", {})
-    assert config.config_api_url() == config.DEFAULT_API_URL
+    assert config.config_api_url() is None
 
 
 def test_config_api_url_uses_configured_value(monkeypatch):

@@ -103,7 +103,7 @@ def config_api_key():
 def config_api_url():
     if use_test_config():
         return config_test_api_url()
-    return get_maybe(CONFIG, "general/api_url") or DEFAULT_API_URL
+    return get_maybe(CONFIG, "general/api_url")
 
 ## Tracks the Requester behind the most recently created Canvas
 ## connection, purely so a CanvasException's real response
@@ -149,13 +149,12 @@ def config_test_api_url():
     return get_maybe(CONFIG, "dev/test_api_url")
 
 def config_test_canvas():
-    ## Deliberately no fallback to config_api_url()/DEFAULT_API_URL: tests
-    ## must have an explicit target (e.g. beta) so a missing config value
-    ## can never silently mean "run against the live instance".
+    ## Deliberately no fallback to config_api_url(): tests must have an
+    ## explicit target (e.g. beta) so a missing config value can never
+    ## silently mean "run against the live instance".
     return Canvas(config_test_api_url(), config_test_api_key())
 
 
-DEFAULT_API_URL = "https://ncl.instructure.com"
 CONFIG = config_config()
 
 ## CLI
