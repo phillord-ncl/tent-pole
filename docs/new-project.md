@@ -9,7 +9,7 @@ one up from nothing.
 ```
 mkdir my-course && cd my-course
 git init    # optional, but recommended -- content under version control
-            # is the whole point of tent-pole
+            # is one of the main points of tent-pole
 ```
 
 ```toml
@@ -25,7 +25,11 @@ also see its "point at a sandbox instead" section.
 ## 2. Bootstrap the Makefile
 
 A leaf `Makefile` locates the installed tent-pole package and includes
-its shared rules, rather than hand-writing push/dump/build recipes:
+its shared rules, rather than hand-writing push/dump/build recipes.
+There's no `tent-pole init` command to generate this yet (a possible
+future addition -- see `next_steps.md`), so for now, write it by hand
+or copy `dev/sample-course/Makefile` from the tent-pole checkout and
+strip its sample-specific bits (image/video generation, `clean`):
 
 ```makefile
 TENT_POLE ?= tent-pole
@@ -46,19 +50,25 @@ full: $(MD_SOURCES:%.md=%.full.html)
 .PHONY: pages quizzes full
 ```
 
-`rules.inc` supplies the generic `%.tpp`/`%.tpf`/`%.tpq`/`%.tpd`/
-`%.full.html` patterns (page/file/quiz push+dump, dependency
-generation, standalone preview). `python/rules.inc` supplies
-`%.out`/`%.stout`/`%.crash` (captured script output for code-block
-`include=`) -- see [write a page](write-a-page.md) for what these are
-for. `dev/sample-course/Makefile` in the tent-pole checkout is a
-complete working example of this pattern; adapt from there rather than
-from scratch if in doubt.
+`rules.inc` builds your markdown pages and quizzes and gets them onto
+Canvas -- pushing/dumping pages, files, and quizzes, and generating the
+per-page dependencies that make `make pages` pick up everything a page
+actually references. `python/rules.inc` adds support for including
+Python source and its captured output in a page or quiz (see
+[write a page](write-a-page.md)). `dev/sample-course/Makefile` in the
+tent-pole checkout is a complete working example of this pattern;
+adapt from there rather than from scratch if in doubt.
 
-Only keep project-specific bits (a Slidy/eisvogel template path, extra
-per-page rules) in your own Makefile -- see `docs/migration.md` if
-you're instead bringing an *existing* project's Makefile up to date
-with the current shared rules, rather than starting fresh.
+The Makefile is otherwise a normal Makefile -- add whatever else your
+course needs on top, e.g. a `slides.html` target running pandoc with a
+Slidy/reveal.js template, or a `handbook.pdf` target assembling several
+pages into a single document via eisvogel. Only project-specific bits
+like these belong in your own Makefile; the shared rules above cover
+what every project needs regardless of subject.
+
+See `docs/migration.md` if you're instead bringing an *existing*
+project's Makefile up to date with the current shared rules, rather
+than starting fresh.
 
 ## 3. Write and push your first page
 
