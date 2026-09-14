@@ -180,12 +180,20 @@ def image_filter(elem, doc):
     ## wrongly used for alt text before this fix, silently producing
     ## alt="" for every image using the plain ![alt](url) form.
     alt = elem.attributes.get("alt") or stringify(elem) or elem.title
+    ## width/height come through from the ![](url){width=... height=...}
+    ## attribute syntax same as alt -- pass them on verbatim (pandoc
+    ## already normalises "400" vs "50%" etc, so no parsing needed here)
+    ## rather than silently dropping them as before.
+    size_attrs = "".join(
+        ' {0}="{1}"'.format(name, elem.attributes[name])
+        for name in ("width", "height") if elem.attributes.get(name)
+    )
     return RawInline('''<img id="{id}"
 src="{api_url}/courses/{course}/files/{id}/preview"
-alt="{name}" />
+alt="{name}"{size_attrs} />
 '''.format(api_url=config.config_api_url(), id=tpf_data.get("id"), name=alt,
            canvas_uri=tpf_data.get("canvas_uri"),
-           course=tpf_data.get("course")))
+           course=tpf_data.get("course"), size_attrs=size_attrs))
 
 
 def canvas_filter(elem, doc):
