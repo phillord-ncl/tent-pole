@@ -1,32 +1,27 @@
 # Configure tent-pole
 
-## Set your API key and course
+## Normal usage: one global key, one project file
 
-Tent-pole reads `tent-pole.toml`, cascaded from two places, root-most
-first, closest-to-cwd winning on a conflicting key:
-
-1. Your user config directory (see
-   [appdirs](https://pypi.org/project/appdirs/); typically
-   `~/.config/tent-pole/tent-pole.toml` on Linux) -- settings that hold
-   across every course, such as your API key.
-2. Every `tent-pole.toml` between the current directory and the
-   nearest enclosing `.git` root (inclusive) -- so a course repo can
-   set `course.id` once at its root and have every subproject
-   directory inherit it.
-
-Create your user config first:
+In practice, most setups need only two files. Your API key is
+personal and holds across every course, so it goes in your *user*
+config once:
 
 ```toml
 # ~/.config/tent-pole/tent-pole.toml
 [general]
 api_key = "put-your-api-key-in-here"
-api_url = "https://your-institution.instructure.com"   # optional, see below
+api_url = "https://your-institution.instructure.com"
+```
 
+Everything specific to a course -- `course.id`, `[module]`, quiz
+settings -- lives in the one `tent-pole.toml` at the root of that
+course's project directory:
+
+```toml
+# my-course/tent-pole.toml
 [course]
 id = "23212"
 ```
-
-`api_url` defaults to `https://ncl.instructure.com` if omitted.
 
 Check it took effect:
 
@@ -35,6 +30,11 @@ tent-pole config dump    # the fully merged configuration
 tent-pole config api-key
 tent-pole config course
 ```
+
+Set `api_url` explicitly, to your own institution's Canvas instance --
+don't rely on omitting it. (It currently falls back to Newcastle's own
+`ncl.instructure.com` if left unset, which is institution-specific and
+not something a general config example should encourage relying on.)
 
 ## Set the course per-invocation instead
 
@@ -73,13 +73,17 @@ Then, any of:
 the tent-pole checkout is a working example of a repo permanently set
 up this way (its Makefile exports `TENT_POLE_USE_TEST_CONFIG=1`).
 
-## A project's own `tent-pole.toml`
+## Nesting projects
 
-A subproject directory only needs to set what it adds or overrides --
-everything else is inherited from its ancestors. Files are deep-merged
-in cascade order, but a table's *list* value is replaced wholesale by
-a closer file rather than concatenated with it, so a subdirectory's
-`[module] items` never end up appended to an ancestor's. See
-[organise a module](organise-a-module.md) for `[module]`, or
-[write a page](write-a-page.md)/[write a quiz](write-a-quiz.md) for
-the content itself.
+Beyond the one-global-key, one-project-file case above, a project can
+be split across nested directories, each with its own
+`tent-pole.toml` -- a subproject directory only needs to set what it
+adds or overrides. Tent-pole reads every `tent-pole.toml` between the
+current directory and the nearest enclosing `.git` root (inclusive),
+root-most first, plus your user config first of all, and deep-merges
+them: closest-to-cwd wins on a conflicting key, and a table's *list*
+value is replaced wholesale by a closer file rather than concatenated
+with it, so a subdirectory's `[module] items` never end up appended to
+an ancestor's. See [organise a module](organise-a-module.md) for
+`[module]`, or [write a page](write-a-page.md)/
+[write a quiz](write-a-quiz.md) for the content itself.
