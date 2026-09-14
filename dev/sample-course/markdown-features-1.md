@@ -76,7 +76,7 @@ anything canvas-filter rewrites -- confirms that pattern still works).
 ```
 
 **Check:** you should see four things, in order -- the syntax-highlighted
-contents of `demo.py`; a "Take from: demo.py" link that downloads the
+contents of `demo.py`; a "Taken from: demo.py" link that downloads the
 original source file; an "Outputs:" label; and a code block showing
 `1 4 9 16 25` each on its own line (the captured stdout from actually
 running `demo.py`).
@@ -86,7 +86,7 @@ running `demo.py`).
 ```{.python include=repl_demo.py stout=true}
 ```
 
-**Check:** below the "Take from: repl_demo.py" link, a "Prints:" label and
+**Check:** below the "Taken from: repl_demo.py" link, a "Prints:" label and
 a code block showing an interactive-shell transcript -- `>>> x = 3`,
 `>>> y = 4`, `>>> x + y` followed by `7`, with the prompts included (this
 is different from "output" above: it's captured as if typed at a Python
@@ -97,7 +97,7 @@ REPL, not just the script's own stdout).
 ```{.python include=crash_demo.py crash=true}
 ```
 
-**Check:** below the "Take from: crash_demo.py" link, a "Crashes:" label
+**Check:** below the "Taken from: crash_demo.py" link, a "Crashes:" label
 and a code block showing a `ZeroDivisionError` traceback (the script
 deliberately divides by zero) -- confirms tent-pole/canvas-filter can
 display a script's failure, not just its successful output.

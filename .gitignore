@@ -10,6 +10,8 @@ tent_pole.egg-info/
 dev/sample-course/*.html
 dev/sample-course/*.tpp
 dev/sample-course/*.tpf
+dev/sample-course/*.tpd
+dev/sample-course/*.tpq
 dev/sample-course/*.out
 dev/sample-course/*.stout
 dev/sample-course/*.crash

@@ -5,7 +5,11 @@ used in the real coursework, for manually reviewing a push against a
 test Canvas instance (typically beta) by eye. Mirrors the real course
 repos' `pandoc → canvas-filter → tent-pole page push` pattern (see
 `../../claude_redesign.md`'s "Beta markdown-feature fixture" note for
-the fuller history, including bugs this fixture caught).
+the fuller history, including bugs this fixture caught). Also
+exercises `.quiz.md` -> Canvas quiz (tent-pole issue #14) the same
+way -- each question states what it's demonstrating, so reviewing the
+pushed quiz is a direct visual check, doubling as documentation for
+the quiz markdown dialect itself.
 
 ## Setup
 
@@ -39,6 +43,10 @@ make full     # builds both pages via code-include-filter instead --
               # browser
 make reorder  # creates the "Markdown Feature Test" module if it doesn't
               # exist yet, then (re-)populates its item list
+make quizzes  # builds + pushes both quiz samples
+make quiz-full # builds both quizzes via code-include-filter instead --
+              # no Canvas access at all, just open *.quiz.full.html in
+              # a browser
 ```
 
 `test-image.png` and `test-video.mp4` aren't checked in -- they're
@@ -48,4 +56,8 @@ them if missing (as a dependency of the pages that reference them);
 see the Makefile for the exact `ffmpeg` invocation.
 
 Each page's content includes inline "Check:" text describing what should
-be visible on Canvas, for manual review.
+be visible on Canvas, for manual review. Each quiz question does the
+same, in its own body text (e.g. "Question 1. Hello world program,
+syntax highlighted...") -- refer to a question by its own name/number
+when reporting an issue, so feedback is unambiguous regardless of
+where it actually renders on the page.
