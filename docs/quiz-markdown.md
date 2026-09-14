@@ -7,6 +7,12 @@ separate quiz-specific syntax. See `dev/sample-course/
 question-types-quiz.quiz.md` and `question-groups-quiz.quiz.md` for
 real, working examples of everything below.
 
+Reference material, not a tutorial -- see [write a quiz](write-a-quiz.md)
+for a walkthrough. Preliminary: real per-question/group identity,
+drift detection, and a `tent-pole.toml`-driven `[quizzes]` config
+section (replacing the `.quiz.md` extension-sniffing convention below)
+are all still open -- see `next_steps.md`.
+
 ## File recognition
 
 The `.quiz.md` extension. A leaf Makefile's own `QUIZ_SOURCES =
@@ -63,8 +69,9 @@ though there's nothing to actually pick.
 
 ## Code blocks
 
-The same `include=`/`output=`/`stout=`/`crash=` attributes a page
-uses (see Pandoc Filters above), plus one quiz-specific addition:
+The same `include=`/`output=`/`stout=`/`crash=` attributes a page uses
+(see [include-code.md](include-code.md)), plus one quiz-specific
+addition:
 
 - `hide_crash=` suppresses the rendered "Crashes:" section that
   `crash=` would otherwise always show. `crash=` alone still means

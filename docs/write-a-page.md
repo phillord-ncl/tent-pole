@@ -80,29 +80,10 @@ no separate `file push` step to remember.
 
 ## Including a script's source and output
 
-For coursework that runs live code and shows the result:
-
-````markdown
-```python {include=demo.py output=true}
-```
-````
-
-renders the syntax-highlighted source, a "Taken from: demo.py"
-download link, and the script's captured stdout. Variants:
-
-- `output=` -- captured stdout, run as a plain script.
-- `stout=` -- captured as an interactive REPL transcript instead
-  (`>>> ` prompts included).
-- `crash=` -- the script is *expected* to crash; renders its
-  traceback instead of failing the build. `hide_crash=` builds the
-  same `.crash` artifact but suppresses the rendered "Crashes:"
-  section -- for a page that asks "will this code crash?" without
-  answering itself.
-
-`python/rules.inc` (included by the Makefile from
-[start a new project](new-project.md)) generates `demo.out`/
-`demo.stout`/`demo.crash` by actually running `demo.py` -- nothing to
-write by hand beyond the code block attribute itself.
+A code block can also pull in a script's own source and what it
+produces when run, instead of you pasting either in by hand -- see
+[include code output in a page or quiz](include-code.md) for the
+attributes and what they render.
 
 ## Standalone preview, no Canvas access
 

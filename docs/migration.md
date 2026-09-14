@@ -1,6 +1,6 @@
 # Migration
 
-## NEXT
+## 0.2.0
 
 Steps to migrate a course repo from a previous tent-pole version onto
 this one:

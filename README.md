@@ -66,6 +66,7 @@ Task-oriented howtos, in `docs/`:
 - [Write a page](docs/write-a-page.md)
 - [Write a quiz](docs/write-a-quiz.md)
 - [Organise a module](docs/organise-a-module.md)
+- [Include code output in a page or quiz](docs/include-code.md)
 
 Reference material:
 
@@ -179,9 +180,10 @@ Pandoc. Tent-pole ships two filters, both understanding the same
   standalone HTML file to open in a browser) where Pandoc itself
   should syntax-highlight per output format instead.
 
-See [docs/write-a-page.md](docs/write-a-page.md) for the
-`include=`/`output=`/`stout=`/`crash=` attributes themselves and a
-typical push pipeline.
+See [docs/include-code.md](docs/include-code.md) for the
+`include=`/`output=`/`stout=`/`crash=` attributes themselves, and
+[docs/write-a-page.md](docs/write-a-page.md) for a typical push
+pipeline.
 
 
 Development
