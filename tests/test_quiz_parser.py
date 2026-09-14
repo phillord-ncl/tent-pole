@@ -38,8 +38,8 @@ def test_question_types_quiz_structure():
     assert all(isinstance(item, quiz_parser.Group) for item in result.items)
 
     assert real.name == "Real Questions"
-    assert real.pick_count == "6"
-    assert len(real.questions) == 6
+    assert real.pick_count == "7"
+    assert len(real.questions) == 7
 
     assert separate.name == "Separate Group"
     assert len(separate.questions) == 1
@@ -109,6 +109,19 @@ def test_question_types_quiz_include_with_crash_attribute():
     assert q.question_name == "Multiple Choice Question with Included Code and Crash Output"
     assert "Crashes:" in q.question_text
     assert "ZeroDivisionError" in q.question_text
+
+
+def test_question_types_quiz_include_with_hidden_crash_attribute():
+    """hide_crash= suppresses the rendered traceback -- a real "will
+    this code crash?" question, unlike the previous one (crash=
+    shown, which would answer the question for free)."""
+    result = _parse("question-types-quiz.quiz.md")
+    q = result.items[0].questions[6]
+    assert q.question_name == "Multiple Choice Question with Hidden Crash Output"
+    assert "Crashes:" not in q.question_text
+    assert "ZeroDivisionError" not in q.question_text
+    correct = [a for a in q.answers if a["answer_weight"] == 100]
+    assert "ZeroDivisionError" in correct[0]["answer_text"]
 
 
 def test_question_groups_quiz_front_matter_describes_quiz_type():

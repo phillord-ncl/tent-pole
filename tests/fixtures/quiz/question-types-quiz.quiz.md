@@ -10,12 +10,16 @@ Practice quiz (`quiz_type: practice_quiz`). Demonstrates question
 types, code rendering, question groups: real questions in one group;
 a mock question in a separate group; a third, empty group.
 
-Front page settings: allowed attempts 1, explicit. Points possible (8)
-computed -- sum of each group's pick_count x question_points (6+1+1).
+Front page settings: allowed attempts 1, explicit. Points possible (9)
+computed -- sum of each group's pick_count x question_points (7+1+1).
 Everything else (time limit, shuffle answers, etc): Canvas default,
 not set here.
 
-## Real Questions {.group pick="6" points="1"}
+Questions may not display in the order below (Canvas's own "Shuffle
+Questions: No" setting doesn't seem to stop this in preview) -- refer
+to a question by its own "Question N" label, not by position.
+
+## Real Questions {.group pick="7" points="1"}
 
 ### Multiple Choice Question with Code {.question points="1"}
 
@@ -49,7 +53,7 @@ Question 3. No answer options, free text only. Type set explicitly
 ### Multiple Choice Question with Included Code, No Output Shown {.question points="1"}
 
 Question 4. `include=` alone, no `output=`. Code only, no output
-block. Compare next question.
+block. Compare Question 5.
 
 ```{.python include=demo.py}
 ```
@@ -74,11 +78,27 @@ recall.
 
 ### Multiple Choice Question with Included Code and Crash Output {.question points="1"}
 
-Question 6. `include=`+`crash=` on one code block: code from
-`crash_demo.py`, real traceback from `crash_demo.crash`. Correct
-answer matches shown traceback -- demonstrates rendering, not recall.
+Question 6. `include=`+`crash=` on one code block, no `hide_crash=`:
+code from `crash_demo.py`, real traceback from
+`crash_demo.crash`. Correct answer matches shown traceback --
+demonstrates rendering, not recall. Compare Question 7.
 
 ```{.python include=crash_demo.py crash="true"}
+```
+
+- [x] It raises `ZeroDivisionError`
+- [ ] It prints `10`
+- [ ] It prints `0`
+- [ ] Nothing happens
+
+### Multiple Choice Question with Hidden Crash Output {.question points="1"}
+
+Question 7. `include=`+`crash=`+`hide_crash=`: crash is captured (so
+the build doesn't fail) but not shown -- a genuine "will this code
+crash?" question. Unlike Question 6, showing the traceback here would
+give the answer away.
+
+```{.python include=crash_demo.py crash="true" hide_crash="true"}
 ```
 
 - [x] It raises `ZeroDivisionError`
@@ -90,8 +110,8 @@ answer matches shown traceback -- demonstrates rendering, not recall.
 
 ### Mock Question in a Separate Group {.question points="1"}
 
-Question 7. Confirms this group is separate from "Real Questions"
-above.
+Question 8. Confirms this group is separate from the "Real Questions"
+group.
 
 - [x] Yes, this is in a separate group
 - [ ] No
