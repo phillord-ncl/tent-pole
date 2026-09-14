@@ -72,7 +72,8 @@ def code_filter(elem, doc):
     if attrs.stout:
         with open(attrs.stout_path) as fh: stout_text = fh.read()
 
-    if attrs.crash:
+    show_crash = attrs.crash and not attrs.hide_crash
+    if show_crash:
         with open(attrs.crash_path) as fh: crash_text = fh.read()
 
     return [i for i in
@@ -86,8 +87,8 @@ def code_filter(elem, doc):
                 attrs.output and CodeBlock(output_text),
                 attrs.stout and Para(Str("Prints:")),
                 attrs.stout and CodeBlock(stout_text),
-                attrs.crash and Para(Str("Crashes:")),
-                attrs.crash and CodeBlock(crash_text)
+                show_crash and Para(Str("Crashes:")),
+                show_crash and CodeBlock(crash_text)
             ]
             if i
         ]

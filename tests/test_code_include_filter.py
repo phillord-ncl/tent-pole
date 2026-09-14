@@ -79,6 +79,26 @@ def test_crash_attribute_appends_captured_traceback(tmp_path):
     assert result[2].text == "ZeroDivisionError\n"
 
 
+def test_hide_crash_suppresses_traceback_but_keeps_crash_declared(tmp_path):
+    """crash= and hide_crash= are separate: crash= alone still means
+    "this program is expected to crash" (a real "will this code
+    crash?" quiz question needs that, or the build fails), but
+    rendering the traceback right there would answer the question for
+    free -- hide_crash= suppresses only the rendering."""
+    source = tmp_path / "demo.py"
+    source.write_text("1/0")
+    (tmp_path / "demo.crash").write_text("ZeroDivisionError\n")
+
+    elem = pf.CodeBlock(
+        "", classes=["python"],
+        attributes={"include": str(source), "crash": "true", "hide_crash": "true"},
+    )
+    result = code_include_filter.code_filter(elem, doc=None)
+
+    assert len(result) == 1
+    assert "Crashes:" not in [getattr(b, "text", None) for b in result]
+
+
 def test_no_language_class_include_still_substitutes(tmp_path):
     source = tmp_path / "output.txt"
     source.write_text("some captured text")

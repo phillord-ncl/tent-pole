@@ -5,14 +5,24 @@ from typing import Optional
 
 @dataclass(frozen=True)
 class CodeIncludeAttrs:
-    """The include=/output=/stout=/crash= attributes on a CodeBlock,
-    shared by canvas_filter, code_include_filter, and
+    """The include=/output=/stout=/crash=/hide_crash= attributes on a
+    CodeBlock, shared by canvas_filter, code_include_filter, and
     include_deps_filter -- all three need the same parsing and the
-    same derived .out/.stout/.crash path shape."""
+    same derived .out/.stout/.crash path shape.
+
+    crash= and hide_crash= are deliberately separate: crash= means
+    "this program is expected to crash, build its .crash artifact
+    rather than treating a non-zero exit as a build failure" -- a
+    build-level declaration that a real "will this code crash?" quiz
+    question still needs, but rendering the traceback right there in
+    the question answers it for free (tent-pole issue #14 review).
+    hide_crash= controls only whether code_filter renders that
+    traceback; it does nothing without crash= also being set."""
     include: Optional[str]
     output: bool
     stout: bool
     crash: bool
+    hide_crash: bool
 
     @classmethod
     def from_element(cls, elem):
@@ -21,6 +31,7 @@ class CodeIncludeAttrs:
             output=bool(elem.attributes.get("output")),
             stout=bool(elem.attributes.get("stout")),
             crash=bool(elem.attributes.get("crash")),
+            hide_crash=bool(elem.attributes.get("hide_crash")),
         )
 
     @property

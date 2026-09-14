@@ -74,6 +74,47 @@ def test_code_filter_include_links_to_tpf_file_id(tmp_path):
     assert link.url == "../files/42/download"
 
 
+def test_code_filter_crash_appends_traceback(tmp_path):
+    source = tmp_path / "demo.py"
+    source.write_text("1/0")
+    write_tpf(source, {"id": 42})
+    (tmp_path / "demo.crash").write_text("ZeroDivisionError\n")
+
+    elem = pf.CodeBlock(
+        "", classes=["python"],
+        attributes={"include": str(source), "crash": "true"},
+    )
+    result = canvas_filter.code_filter(elem, doc=None)
+
+    texts = [getattr(b, "text", None) for b in result]
+    assert "Crashes:" in [getattr(b.content[0], "text", None) for b in result if hasattr(b, "content")]
+    assert "ZeroDivisionError\n" in texts
+
+
+def test_code_filter_hide_crash_suppresses_traceback(tmp_path):
+    """See tent-pole issue #14 review: crash= alone still declares the
+    program is expected to crash (needed for a real "will this code
+    crash?" quiz question to build at all), but rendering the
+    traceback right there answers the question for free. hide_crash=
+    suppresses only the rendering, not the crash= declaration itself."""
+    source = tmp_path / "demo.py"
+    source.write_text("1/0")
+    write_tpf(source, {"id": 42})
+    (tmp_path / "demo.crash").write_text("ZeroDivisionError\n")
+
+    elem = pf.CodeBlock(
+        "", classes=["python"],
+        attributes={"include": str(source), "crash": "true", "hide_crash": "true"},
+    )
+    result = canvas_filter.code_filter(elem, doc=None)
+
+    ## Just the highlighted code + the "Taken from:" link -- no
+    ## Crashes: section at all.
+    assert len(result) == 2
+    texts = [getattr(b, "text", None) for b in result]
+    assert "ZeroDivisionError\n" not in texts
+
+
 ## link_filter
 
 def test_link_filter_leaves_external_urls_unchanged():
