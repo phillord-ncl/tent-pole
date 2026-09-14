@@ -191,6 +191,15 @@ The Canvas page name is derived from the file name: `page-1.html` ->
 pair -- see the Pandoc filters below, which read the `.tpf` sidecar
 files back in to resolve links, images and embeds.
 
+### quiz
+
+- `push <file>` -- create-or-update a Canvas quiz from a `.quiz.md`
+  file
+- `push --dry-run <file>` -- parse and print the structure, no network
+  access
+
+See `docs/quiz-markdown.md` for the `.quiz.md` dialect itself.
+
 
 Pandoc Filters
 ---------------
@@ -238,8 +247,9 @@ Development
 ------------
 
 `dev/sample-course/` is a standalone fixture exercising every
-Markdown/`canvas-filter` feature, for reviewing a push against a test
-Canvas instance by eye -- see its own `README.md`.
+Markdown/`canvas-filter` feature, plus `.quiz.md` -> Canvas quiz, for
+reviewing a push against a test Canvas instance by eye -- see its own
+`README.md`.
 
 ```
 poetry install --with dev
