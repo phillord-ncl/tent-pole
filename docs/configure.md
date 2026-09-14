@@ -31,10 +31,7 @@ tent-pole config api-key
 tent-pole config course
 ```
 
-Set `api_url` explicitly, to your own institution's Canvas instance --
-don't rely on omitting it. (It currently falls back to Newcastle's own
-`ncl.instructure.com` if left unset, which is institution-specific and
-not something a general config example should encourage relying on.)
+`api_url` is required -- there's no default.
 
 ## Set the course per-invocation instead
 
