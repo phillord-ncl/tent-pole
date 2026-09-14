@@ -12,7 +12,12 @@ poetry run tent-pole --help
 
 Every other command in these docs assumes `tent-pole` is already on
 your `PATH` -- prefix with `poetry run` (or `poetry shell` first) if
-you're working from a Poetry checkout instead.
+you're working from a Poetry checkout instead. `tent-pole.py` in the
+repository root is an equivalent entry point, so `python3 tent-pole.py
+--help` also works as a shorthand -- but only inside an environment
+that already has tent-pole's dependencies installed (i.e. after
+`poetry install`, run via `poetry run`/`poetry shell` same as above),
+not as a way to skip installing anything.
 
 ## As a `tent-pole` binary on your `PATH`
 
@@ -35,14 +40,6 @@ or from a local clone:
 
 ```
 pipx install /path/to/tent-pole/main
-```
-
-## Without installing anything
-
-`tent-pole.py` in the repository root is an equivalent entry point:
-
-```
-python3 tent-pole.py --help
 ```
 
 ## Check it worked
