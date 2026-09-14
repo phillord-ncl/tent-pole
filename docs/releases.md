@@ -1,5 +1,25 @@
 # Releases
 
+## 0.3.0
+
+- Author Canvas quizzes from a `.quiz.md` markdown dialect --
+  `tent-pole quiz push`, plus a `%.tpq`/`%.quiz.full.html` Make
+  pattern. See `docs/quiz-markdown.md`. Multiple-choice/multiple-
+  answers/essay questions, question groups (including an empty one),
+  and code blocks (`include=`/`output=`/`stout=`/`crash=`, plus a new
+  `hide_crash=`) are supported; matching/numerical/fill-in-multiple-
+  blanks/question banks aren't yet.
+- A `[module] items` entry can reference a quiz by its `.quiz.md`
+  filename, the same way a page item already does, instead of a raw
+  Canvas id.
+- A markdown link to a `.quiz.md` file resolves to the quiz's real
+  Canvas url, once pushed.
+- Fixed: "Take from:" read "Taken from:" in code-block attribution
+  links.
+- Fixed: an answer's markup (e.g. inline code) rendered as literal
+  HTML tags instead of formatted text -- Canvas needs a separate
+  `answer_html` field alongside `answer_text`, not just the latter.
+
 ## 0.2.0
 
 - Shared Makefile includes (`tent_pole/make-rules/`, `tent_pole/bin/`),
