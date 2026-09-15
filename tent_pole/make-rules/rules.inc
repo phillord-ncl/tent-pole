@@ -94,7 +94,7 @@ endif
 ## Canvas's own page wrapper.
 %.full.html: %.md
 	@echo "  FULL     $<"
-	$(Q)pandoc --self-contained --filter=$(CODE_INCLUDE_FILTER) $< -o $@
+	$(Q)pandoc --embed-resources --standalone --filter=$(CODE_INCLUDE_FILTER) $< -o $@
 
 ## A .quiz.md file is authored quite differently from an ordinary
 ## page (see tent-pole issue #14), but is still a plain `*.md` file as
@@ -120,7 +120,7 @@ endif
 ## for an ordinary page -- no new preview-side code needed.
 %.quiz.full.html: %.quiz.md
 	@echo "  FULL     $<"
-	$(Q)pandoc --self-contained --filter=$(CODE_INCLUDE_FILTER) $< -o $@
+	$(Q)pandoc --embed-resources --standalone --filter=$(CODE_INCLUDE_FILTER) $< -o $@
 
 ## No separate create-module target -- reorder gets-or-creates the
 ## module itself, so this is the only step ever needed, even on a
