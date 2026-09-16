@@ -185,6 +185,24 @@ def test_link_filter_resolves_page_link_with_fragment_to_its_dumped_real_url(tmp
     assert result.url == "some-page-2#some-heading"
 
 
+def test_link_filter_resolves_md_extensioned_link_with_fragment_to_its_dumped_real_url(tmp_path):
+    """Same as the extensionless case above, but authored with an
+    explicit .md suffix (page.md#heading) -- os.path.splitext must be
+    run on the fragment-stripped path, not the raw elem.url, or the
+    "." in ".md" plus the trailing "#heading" produces a bogus
+    ext of ".md#heading", missing the ext in ("", ".md", ".html")
+    check and falling through to the file-attachment branch, which
+    then crashes looking for a "page.md#heading.tpf" that can never
+    exist."""
+    page = tmp_path / "some-page"
+    write_tpp(page, {"url": "some-page-2"})
+
+    elem = pf.Link(pf.Str("x"), url=str(page) + ".md#some-heading")
+    result = canvas_filter.link_filter(elem, doc=None)
+
+    assert result.url == "some-page-2#some-heading"
+
+
 def test_link_filter_resolves_quiz_md_link_to_its_pushed_html_url(tmp_path):
     """A .quiz.md link must never fall into the page branch above --
     os.path.splitext only strips the last extension, so

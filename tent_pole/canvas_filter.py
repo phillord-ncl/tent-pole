@@ -121,7 +121,7 @@ def link_filter(elem, doc):
         )
         return elem
 
-    base, ext = os.path.splitext(elem.url)
+    base, ext = os.path.splitext(path)
 
     ## A link to another Canvas page: either bare (no extension -- the
     ## common authoring form) or spelled out with its .md source or
