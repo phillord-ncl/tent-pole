@@ -42,6 +42,22 @@ or from a local clone:
 pipx install /path/to/tent-pole/main
 ```
 
+## On Windows
+
+Python, GNU Make, and Pandoc are not preinstalled. `winget` covers all
+three:
+
+```
+winget install --id Python.Python.3.14
+winget install --id GnuWin32.Make
+winget install --id JohnMacFarlane.Pandoc
+```
+
+Then the Poetry or pipx install above works as-is from PowerShell or
+`cmd`. `local-install.sh` is a Bash script and needs WSL or Git Bash to
+run -- pipx is the simpler route to a `tent-pole` binary on native
+Windows.
+
 ## Check it worked
 
 ```
