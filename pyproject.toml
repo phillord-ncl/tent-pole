@@ -7,7 +7,11 @@ authors = ["Phillip Lord"]
 ## are shipped Makefile fragments and support scripts, not Python
 ## source, so they need an explicit include or they'd silently be
 ## missing from the built wheel/sdist.
-include = ["tent_pole/make-rules/**/*", "tent_pole/bin/**/*"]
+include = [
+    "tent_pole/make-rules/**/*",
+    "tent_pole/bin/**/*",
+    "tent_pole/init-template/**/*",
+]
 
 [tool.poetry.dependencies]
 python = ">=3.14,<4.0"

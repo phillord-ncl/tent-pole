@@ -1,0 +1,8 @@
+[course]
+id = "COURSE_NAME"   # numeric id, course code, or name -- see configure.md
+
+[module]
+identifier = "Hello World Module"
+items = [
+  {id="hello"},
+]

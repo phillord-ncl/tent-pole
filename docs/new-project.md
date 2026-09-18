@@ -1,105 +1,60 @@
 # Start a new project
 
 A tent-pole project is a directory of markdown files plus a
-`tent-pole.toml`, built with GNU Make and pushed to Canvas. This sets
-one up from nothing.
+`tent-pole.toml`, built with GNU Make and pushed to Canvas.
 
-## 1. Create the directory and configure the course
+You should ensure your API key is [configured](configure.md) first
+before you run this.
+
+## 1. Scaffold
 
 ```
 mkdir my-course && cd my-course
-git init    # optional, but recommended -- content under version control
-            # is one of the main points of tent-pole
+tent-pole init
 ```
+
+This creates a `Makefile`, `tent-pole.toml`, and a starter `hello.md`, and
+runs `git init` -- content under version control is one of the main
+points of tent-pole.
+
+## 2. Configure the course and module
+
+`tent-pole init` also creates a `tent-pole.toml` file which describes
+how the markdown files will be pushed to Canvas. You will need to
+alter the course ID to a course you control on Canvas.
 
 ```toml
 # tent-pole.toml
 [course]
-id = "23212"   # numeric id, course code, or name -- see configure.md
-```
+id = "COURSE_NAME"   # numeric id, course code, or name -- see configure.md
 
-Make sure your API key is set up first -- see [configure](configure.md).
-If you're rehearsing against a sandbox rather than the real course,
-also see its "point at a sandbox instead" section.
-
-## 2. Bootstrap the Makefile
-
-A leaf `Makefile` locates the installed tent-pole package and includes
-its shared rules, rather than hand-writing push/dump/build recipes.
-There's no `tent-pole init` command to generate this yet (a possible
-future addition -- see `next_steps.md`), so for now, write it by hand
-or copy `dev/sample-course/Makefile` from the tent-pole checkout and
-strip its sample-specific bits (image/video generation, `clean`):
-
-```makefile
-TENT_POLE ?= tent-pole
-TENT_POLE_DIR := $(shell $(TENT_POLE) pkg-dir)
-include $(TENT_POLE_DIR)/make-rules/rules.inc
-include $(TENT_POLE_DIR)/make-rules/python/rules.inc
-
-MD_SOURCES = $(filter-out %.quiz.md,$(wildcard *.md))
-QUIZ_SOURCES = $(wildcard *.quiz.md)
-
-include $(MD_SOURCES:%.md=%.tpd)   # auto-generated per-page dependencies
-
-pages: $(MD_SOURCES:%.md=%.tpp)
-quizzes: $(QUIZ_SOURCES:%.quiz.md=%.tpq)
-full: $(MD_SOURCES:%.md=%.full.html)
-
-.DEFAULT_GOAL := pages
-.PHONY: pages quizzes full
-```
-
-`rules.inc` builds your markdown pages and quizzes and gets them onto
-Canvas -- pushing/dumping pages, files, and quizzes, and generating the
-per-page dependencies that make `make pages` pick up everything a page
-actually references. `python/rules.inc` adds support for including
-Python source and its captured output in a page or quiz (see
-[write a page](write-a-page.md)). `dev/sample-course/Makefile` in the
-tent-pole checkout is a complete working example of this pattern;
-adapt from there rather than from scratch if in doubt.
-
-The Makefile is otherwise a normal Makefile -- add whatever else your
-course needs on top, e.g. a `slides.html` target running pandoc with a
-Slidy/reveal.js template, or a `handbook.pdf` target assembling several
-pages into a single document via eisvogel. Only project-specific bits
-like these belong in your own Makefile; the shared rules above cover
-what every project needs regardless of subject.
-
-See `docs/migration.md` if you're instead bringing an *existing*
-project's Makefile up to date with the current shared rules, rather
-than starting fresh.
-
-## 3. Write and push your first page
-
-```
-echo '# Hello' > hello.md
-make pages
-```
-
-builds `hello.md` through pandoc + `canvas-filter` and pushes it. See
-[write a page](write-a-page.md) for what the markdown can contain.
-
-## 4. Put it in a module
-
-```toml
-# tent-pole.toml, appended
 [module]
-identifier = "Week 1"
+identifier = "Hello World Module"
 items = [
   {id="hello"},
 ]
 ```
 
+## 3. Build and push
+
+To run the build and push the pages to Canvas, we use two make commands.
+
 ```
+make pages
 make reorder
 ```
 
-See [organise a module](organise-a-module.md) for indenting, sub-headers,
-and quizzes in the item list.
+`make pages` builds `hello.md` into HTML which is then pushed to
+Canvas. See [write a page](write-a-page.md) for what the markdown can
+contain. `make reorder` creates the module if needed, and
+[organises](organise-a-module.md) the pages with in it.
 
-## 5. Add a quiz (optional)
+The generated `Makefile` contains specific support for `tent-pole` but
+is otherwise normal. You can add whatever else you course needs to it.
 
-See [write a quiz](write-a-quiz.md) once you have at least one page in
-place -- the same `make` pattern above already builds `.quiz.md`
-files via `QUIZ_SOURCES`.
+## `init` options
+
+- `--no-git` -- don't run `git init`.
+- `--tent-pole-dev` -- for tent-pole development this runs `tent-pole`
+  directly from source using `poetry` avoiding the need for continual
+  re-installation.
