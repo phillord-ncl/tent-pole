@@ -156,6 +156,23 @@ def test_link_filter_resolves_html_extensioned_link_to_its_dumped_real_url(tmp_p
     assert result.url == "intro-2"
 
 
+def test_link_filter_resolves_html_extensioned_file_via_its_tpf_when_no_tpp(tmp_path):
+    """Not every .html-extensioned link is a Canvas page: a
+    self-contained artefact like _slidy.html or .full.html is pushed
+    via file push, never page push, so it has a .tpf but no .tpp
+    (tent-pole issue #23). Must resolve via the .tpf id, same as an
+    ordinary file/image link, rather than falling through to the bare
+    (broken) path that the no-.tpp branch uses for a genuinely
+    not-yet-pushed page."""
+    target = tmp_path / "lecture-1_slidy.html"
+    write_tpf(target, {"id": 12345})
+
+    elem = pf.Link(pf.Str("x"), url=str(target))
+    result = canvas_filter.link_filter(elem, doc=None)
+
+    assert result.url == "../files/12345/download"
+
+
 def test_link_filter_resolves_page_link_to_its_dumped_real_url(tmp_path):
     """See tent-pole issue #29: Canvas reserves a deleted page's slug
     for undelete, so a page's real url can diverge from the name a

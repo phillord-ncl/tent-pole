@@ -125,9 +125,14 @@ def link_filter(elem, doc):
 
     ## A link to another Canvas page: either bare (no extension -- the
     ## common authoring form) or spelled out with its .md source or
-    ## its locally-rendered .html. Both are a page reference, never a
+    ## its locally-rendered .html. Usually a page reference, never a
     ## file attachment -- there is no intro.html.tpf, intro.html was
-    ## never pushed via file push, it's a page (tent-pole issue #23).
+    ## never pushed via file push, it's a page. BUT a self-contained
+    ## artefact like _slidy.html or .full.html *is* pushed via file
+    ## push, never page push, so it has a .tpf but no .tpp -- resolve
+    ## those the same way an ordinary file/image link does, via their
+    ## .tpf id, rather than falling through to a bare (broken) url
+    ## (tent-pole issue #23).
     ## Resolve to the target's real url if it's been pushed+dumped
     ## already -- its .tpp records pageobj.url (page.py's
     ## __resolve_page-corrected real url), which can differ from the
@@ -143,10 +148,12 @@ def link_filter(elem, doc):
         ## with a .md/.html suffix either.
         page_path = os.path.splitext(path)[0]
         tpp_path = page_path + ".tpp"
-        real_url = (
-            toml.load(tpp_path).get("url", page_path)
-            if os.path.exists(tpp_path) else page_path
-        )
+        if os.path.exists(tpp_path):
+            real_url = toml.load(tpp_path).get("url", page_path)
+        elif os.path.exists(path + ".tpf"):
+            real_url = "../files/{}/download".format(str(tpf(path).get("id")))
+        else:
+            real_url = page_path
         elem.url = real_url + ("#" + fragment if fragment else "")
         return elem
 
