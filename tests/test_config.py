@@ -1,6 +1,9 @@
 import os
 
+import click
+import pytest
 import toml
+from canvasapi import Canvas
 from click.testing import CliRunner
 
 from tent_pole import config
@@ -255,6 +258,44 @@ def test_config_api_key_does_not_blend_general_when_test_config_on_and_dev_unset
     monkeypatch.setenv("TENT_POLE_USE_TEST_CONFIG", "1")
     monkeypatch.setattr(config, "CONFIG", {"general": {"api_key": "prod-key"}})
     assert config.config_api_key() is None
+
+
+## config_canvas(): canvasapi's own Canvas.__init__ does
+## `"api/v1" in base_url` unconditionally, so a None api_url used to
+## crash with a raw TypeError from inside canvasapi -- no mention of
+## config anywhere. Reproduces exactly the crash a real run hit when
+## both the tent-pole.toml `beta = true` and the makefile-local
+## `export TENT_POLE_USE_TEST_CONFIG=1` safeguards were disabled at
+## once, leaving general/api_url unset with no loud warning until
+## deep inside a third-party library.
+
+def test_config_canvas_raises_friendly_error_when_api_url_missing(monkeypatch):
+    monkeypatch.delenv("TENT_POLE_USE_TEST_CONFIG", raising=False)
+    monkeypatch.setattr(config, "CONFIG", {"general": {"api_key": "some-key"}})
+    with pytest.raises(click.ClickException) as excinfo:
+        config.config_canvas()
+    assert "api_url" in str(excinfo.value)
+    assert "general/api_url" in str(excinfo.value)
+
+
+def test_config_canvas_raises_friendly_error_when_both_missing_in_test_mode(monkeypatch):
+    monkeypatch.setenv("TENT_POLE_USE_TEST_CONFIG", "1")
+    monkeypatch.setattr(config, "CONFIG", {})
+    with pytest.raises(click.ClickException) as excinfo:
+        config.config_canvas()
+    message = str(excinfo.value)
+    assert "api_url" in message and "api_key" in message
+    assert "dev/test_api_url" in message and "dev/test_api_key" in message
+
+
+def test_config_canvas_succeeds_when_both_set(monkeypatch):
+    monkeypatch.delenv("TENT_POLE_USE_TEST_CONFIG", raising=False)
+    monkeypatch.setattr(
+        config, "CONFIG",
+        {"general": {"api_url": "https://ncl.instructure.com", "api_key": "some-key"}},
+    )
+    canvas = config.config_canvas()
+    assert isinstance(canvas, Canvas)
 
 
 ## CLI commands -- regression tests: api-key and course used to crash with

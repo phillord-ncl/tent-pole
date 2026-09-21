@@ -122,7 +122,29 @@ _last_requester = None
 
 def config_canvas():
     global _last_requester
-    canvas = Canvas(config_api_url(), config_api_key())
+    api_url = config_api_url()
+    api_key = config_api_key()
+    missing = [
+        name for name, value in (("api_url", api_url), ("api_key", api_key))
+        if not value
+    ]
+    if missing:
+        ## canvasapi's own Canvas.__init__ does `"api/v1" in base_url`
+        ## unconditionally, so a None api_url crashes with a raw
+        ## TypeError from inside canvasapi rather than any message
+        ## about config at all -- check first and say which key,
+        ## under which config path, is actually missing.
+        prefix = "dev/test_" if use_test_config() else "general/"
+        raise click.ClickException(
+            "Canvas not configured: {} not set (targeting {} -- "
+            "looked for {}). Check tent-pole.toml and "
+            "~/.config/tent-pole/tent-pole.toml.".format(
+                " and ".join(missing),
+                "beta/test" if use_test_config() else "production",
+                ", ".join(prefix + m for m in missing),
+            )
+        )
+    canvas = Canvas(api_url, api_key)
     _last_requester = canvas._Canvas__requester
     return canvas
 
