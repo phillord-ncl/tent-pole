@@ -83,17 +83,26 @@ def collect_deps(doc):
     return list(dict.fromkeys(html_deps)), list(dict.fromkeys(full_deps))
 
 
-def generate(source):
-    """The two Makefile dependency lines for `source`, using its own
-    concrete stem -- never the literal pattern % -- since Make doesn't
-    merge prerequisites across two separate declarations of the same
-    pattern rule (verified directly; see the plan)."""
+def parse(source):
+    """(html_deps, full_deps) for `source` -- runs pandoc, parses the
+    resulting AST, and returns collect_deps()'s own lists directly.
+    Shared by generate() (the Makefile-text tool) and the doit rules
+    (tent_pole/doit_rules), which want the lists themselves rather than
+    a rendered dependency line."""
     result = subprocess.run(
         ["pandoc", "-t", "json", source],
         capture_output=True, check=True, text=True,
     )
     doc = load(io.StringIO(result.stdout))
-    html_deps, full_deps = collect_deps(doc)
+    return collect_deps(doc)
+
+
+def generate(source):
+    """The two Makefile dependency lines for `source`, using its own
+    concrete stem -- never the literal pattern % -- since Make doesn't
+    merge prerequisites across two separate declarations of the same
+    pattern rule (verified directly; see the plan)."""
+    html_deps, full_deps = parse(source)
 
     ## Deliberately NOT "%.tpd" as a co-target here, unlike the GNU
     ## manual's own %.o %.d: %.c %.h idiom -- that trick exists because

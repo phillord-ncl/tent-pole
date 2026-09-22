@@ -126,6 +126,22 @@ files = [
 ]
 
 [[package]]
+name = "doit"
+version = "0.37.0"
+description = "doit - Automation Tool"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "doit-0.37.0-py3-none-any.whl", hash = "sha256:a9f181566aa90faac515e276f85e6526019554ed7e13c12cf9dc094ffecf3e1b"},
+    {file = "doit-0.37.0.tar.gz", hash = "sha256:d3c72e0e46a8fa1ddabea8f830762402dee090caf33c30c2295ac7010db8f09c"},
+]
+
+[package.extras]
+cloudpickle = ["cloudpickle ; platform_python_implementation != \"PyPy\""]
+toml = ["tomli ; python_version < \"3.11\""]
+
+[[package]]
 name = "dpath"
 version = "2.2.0"
 description = "Filesystem-like pathing and searching for dictionaries"
@@ -567,4 +583,4 @@ python-discovery = ">=1.6"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4.0"
-content-hash = "8722eebce0288555c8cc82ff368f652ce03d132fc02c39fb185dd487127cbc25"
+content-hash = "4432f3bda47c660c47226244812681b4e6ab4c8d780730e559e467e2a5270d75"

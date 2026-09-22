@@ -1,6 +1,7 @@
 __pycache__
 dist/
 tent_pole.egg-info/
+.doit.db
 
 ## Generated build products under dev/sample-course/ (see its README.md)
 ## -- source is tracked, these are rebuilt by `make`. No secret lives in

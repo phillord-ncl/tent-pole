@@ -6,6 +6,7 @@ import os
 import sys
 
 
+from . import build
 from . import config
 from . import course
 from . import course_import
@@ -58,6 +59,7 @@ def init(no_git):
     scaffold.write_if_absent("tent-pole.toml", scaffold.init_template("tent-pole.toml"))
     scaffold.write_if_absent("hello.md", scaffold.init_template("hello.md"))
 
+main.add_command(build.build)
 main.add_command(config.config)
 main.add_command(course.course)
 main.add_command(course_import.import_command)

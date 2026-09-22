@@ -23,6 +23,7 @@ dpath = "^2.1.0"
 stringcase = "^1.2.0"
 panflute = "^2.3.1"
 pygments = "^2.19"
+doit = "^0.37.0"
 
 [tool.poetry.scripts]
 tent-pole = "tent_pole.main:cli"
