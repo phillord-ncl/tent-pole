@@ -55,3 +55,6 @@ is otherwise normal. You can add whatever else you course needs to it.
 ## `init` options
 
 - `--no-git` -- don't run `git init`.
+
+Already have content on Canvas rather than starting from scratch? See
+[import an existing course](import-a-course.md) instead.

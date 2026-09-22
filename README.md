@@ -62,6 +62,7 @@ Task-oriented howtos, in `docs/`:
 
 - [Install tent-pole](docs/install.md)
 - [Start a new project](docs/new-project.md)
+- [Import an existing course](docs/import-a-course.md)
 - [Configure](docs/configure.md)
 - [Write a page](docs/write-a-page.md)
 - [Write a quiz](docs/write-a-quiz.md)
