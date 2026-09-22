@@ -26,9 +26,16 @@ poetry install
 poetry run tent-pole --help
 ```
 
-It is also possible to set up a project to use `tent-pole` entirely
-from source with `tent-pole init`. This is only really useful if you
-are developing `tent-pole`.
+```
+pipx install --editable /path/to/tent-pole/main
+```
+
+keeps `tent-pole`/`canvas-filter`/`code-include-filter`/
+`include-deps-filter` on your `PATH` live against the checkout -- edit
+the source, no reinstall needed. This is the way to develop against a
+project that lives anywhere (unlike `poetry run`, which needs to run
+from inside the checkout). `poetry install` is still what you want for
+running tent-pole's own test suite.
 
 ## On Windows
 

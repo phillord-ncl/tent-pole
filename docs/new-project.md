@@ -55,6 +55,3 @@ is otherwise normal. You can add whatever else you course needs to it.
 ## `init` options
 
 - `--no-git` -- don't run `git init`.
-- `--tent-pole-dev` -- for tent-pole development this runs `tent-pole`
-  directly from source using `poetry` avoiding the need for continual
-  re-installation.

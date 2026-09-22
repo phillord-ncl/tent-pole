@@ -1,5 +1,23 @@
 # Migration
 
+## 0.4.0
+
+Steps for a repo that already adopted `tent-pole init --tent-pole-dev`'s
+generated `dev-scripts/` (that flag no longer exists):
+
+1. Delete `dev-scripts/tent-pole-dev.sh` and its per-filter symlinks
+   (`canvas-filter.sh`, `code-include-filter.sh`,
+   `include-deps-filter.sh`).
+
+2. Drop the `-include dev-scripts/dev.mk` line from the Makefile, and
+   delete `dev-scripts/dev.mk` itself.
+
+3. Drop any `TENT_POLE`/`CANVAS_FILTER`/`CODE_INCLUDE_FILTER`/
+   `INCLUDE_DEPS_FILTER` override from a local Makefile fragment
+   (e.g. `makefile-local`) entirely -- `rules.inc`'s own `?=` defaults
+   resolve correctly on their own once tent-pole is
+   `pipx install --editable`'d (see [install](install.md)).
+
 ## 0.2.0
 
 Steps to migrate a course repo from a previous tent-pole version onto
