@@ -1,4 +1,5 @@
 import functools
+import html
 import os
 import re
 
@@ -25,13 +26,54 @@ LEGACY_LINE_NUMBER_PATTERN = re.compile(r'<font[^>]*>\d+:</font> ?', re.MULTILIN
 LEGACY_TAG_PATTERN = re.compile(r'</?(?:font|b|i|u)\b[^>]*>')
 
 
-def __unwrap_legacy_source_highlight(html):
+def __unwrap_legacy_source_highlight(page_html):
     def unwrap(match):
         inner = LEGACY_LINE_NUMBER_PATTERN.sub("", match.group(1))
         inner = LEGACY_TAG_PATTERN.sub("", inner)
         return "<pre><code>" + inner + "</code></pre>"
 
-    return LEGACY_HIGHLIGHT_BLOCK_PATTERN.sub(unwrap, html)
+    return LEGACY_HIGHLIGHT_BLOCK_PATTERN.sub(unwrap, page_html)
+
+
+## canvas_filter's own mp4 -> video-player embed (link_filter's ext ==
+## ".mp4" branch) renders as an <iframe data-media-id="..." src=".../
+## media_objects_iframe/...">, addressing a Canvas *media object*, not
+## a regular file -- canvasapi has no media-object download support at
+## all (unlike course.get_file() for an ordinary file/image), so unlike
+## an include='d source file, there is currently nothing to actually
+## fetch here. Left as a plain note rather than silently vanishing:
+## by default pandoc's HTML reader drops any tag it doesn't recognise,
+## iframe included, with no trace at all -- confirmed empirically, not
+## assumed -- so doing nothing here would silently delete real content
+## rather than degrading to best-effort.
+VIDEO_IFRAME_PATTERN = re.compile(r'<iframe\b([^>]*)>.*?</iframe>', re.DOTALL)
+MEDIA_ID_ATTRIBUTE_PATTERN = re.compile(r'data-media-id="([^"]*)"')
+TITLE_ATTRIBUTE_PATTERN = re.compile(r'\btitle="([^"]*)"')
+
+## Theme/institution-injected chrome (analytics, mobile-config), not
+## authored course content -- stripped the same way the tent-pole
+## managed marker span is, rather than surviving as inert raw HTML.
+SCRIPT_TAG_PATTERN = re.compile(r'<script\b[^>]*>.*?</script>|<script\b[^>]*/>', re.DOTALL)
+
+
+def __replace_video_iframes(page_html):
+    def replace(match):
+        attrs = match.group(1)
+        media_id_match = MEDIA_ID_ATTRIBUTE_PATTERN.search(attrs)
+        if media_id_match is None:
+            return match.group(0)
+
+        title_match = TITLE_ATTRIBUTE_PATTERN.search(attrs)
+        label = title_match.group(1) if title_match else media_id_match.group(1)
+        print("Warning: video embed {!r} could not be downloaded (no media-object "
+              "download support), left as a note instead".format(label))
+        return "<p><em>[Video not imported: {}]</em></p>".format(html.escape(label))
+
+    return VIDEO_IFRAME_PATTERN.sub(replace, page_html)
+
+
+def __strip_script_tags(page_html):
+    return SCRIPT_TAG_PATTERN.sub("", page_html)
 
 
 class ImportContext:
@@ -166,6 +208,69 @@ def link_filter(elem, context):
     return elem
 
 
+## The only language include=/output=/stout=/crash= currently supports
+## (tent_pole/docs/include-code.md: "This is currently Python-specific").
+## Recovering the language from the downloaded include file's own
+## extension, rather than the rendered code block, since a Pygments
+## noclasses=True block carries no language name anywhere in its
+## output -- only colours.
+LANGUAGE_BY_EXTENSION = {".py": "python"}
+
+
+def __taken_from_link_target(elem):
+    """The link's url if elem is exactly the Para(Link(...)) that
+    code_filter emits right after an include='d code block ("Taken
+    from: <file>"), else None."""
+    if not (isinstance(elem, Para) and len(elem.content) == 1
+            and isinstance(elem.content[0], Link)):
+        return None
+    link = elem.content[0]
+    return link.url if stringify(link).startswith("Taken from: ") else None
+
+
+def __section_label(elem, label):
+    return (isinstance(elem, Para) and len(elem.content) == 1
+            and isinstance(elem.content[0], Str) and elem.content[0].text == label)
+
+
+def __fold_code_includes(items, context):
+    """A code_filter-produced [highlighted code][Taken from: <file>
+    link][Outputs:/Prints:/Crashes: sections] run of blocks -> a single
+    `{include=<file> ...}` CodeBlock, so re-running `make pages` against
+    the downloaded source regenerates the same rendering instead of the
+    reconstructed markdown carrying a frozen, unmaintainable copy of it.
+    Only folds when the referenced file actually downloaded -- a broken
+    reference (see ImportContext.download_file) is left as a literal
+    code block plus its now-inert link, same as any other file/image
+    download failure elsewhere in this filter."""
+    result = []
+    i = 0
+    while i < len(items):
+        item = items[i]
+        target = (
+            __taken_from_link_target(items[i + 1])
+            if isinstance(item, CodeBlock) and i + 1 < len(items) else None
+        )
+        if target is None or not os.path.exists(os.path.join(context.output_dir, target)):
+            result.append(item)
+            i += 1
+            continue
+
+        j = i + 2
+        directive_attrs = {"include": target}
+        for label, attr in (("Outputs:", "output"), ("Prints:", "stout"), ("Crashes:", "crash")):
+            if (j + 1 < len(items) and __section_label(items[j], label)
+                    and isinstance(items[j + 1], CodeBlock)):
+                directive_attrs[attr] = "true"
+                j += 2
+
+        lang = LANGUAGE_BY_EXTENSION.get(os.path.splitext(target)[1])
+        result.append(CodeBlock("", classes=[lang] if lang else [], attributes=directive_attrs))
+        i = j
+
+    return result
+
+
 def import_filter(elem, doc, context):
     if isinstance(elem, Para) and len(elem.content) == 1 and __is_managed_marker(elem.content[0]):
         return []
@@ -182,15 +287,22 @@ def import_filter(elem, doc, context):
     return None
 
 
-def convert(html, context):
+def convert(page_html, context):
     """A Canvas page body -> best-effort markdown, in-process (not a
     `pandoc --filter=` subprocess, unlike canvas_filter's forward
     direction) -- context carries a live course handle and a download
     cache that can't cross a subprocess boundary, so the HTML is parsed
     to a panflute Doc, walked with import_filter bound to this run's
     context, and converted back to markdown, all within this process."""
-    html = __unwrap_legacy_source_highlight(html)
-    doc = convert_text(html, input_format="html", output_format="panflute", standalone=True)
+    page_html = __unwrap_legacy_source_highlight(page_html)
+    page_html = __replace_video_iframes(page_html)
+    page_html = __strip_script_tags(page_html)
+    ## +raw_html: without it, pandoc's HTML reader silently discards any
+    ## tag it doesn't itself recognise (confirmed empirically) -- a
+    ## strictly safer default than losing content with no trace, for
+    ## whatever Canvas/editor cruft isn't specifically handled above.
+    doc = convert_text(page_html, input_format="html+raw_html", output_format="panflute", standalone=True)
     action = functools.partial(import_filter, context=context)
     doc = run_filters([action], doc=doc)
+    doc.content = __fold_code_includes(list(doc.content), context)
     return convert_text(doc, input_format="panflute", output_format="markdown")

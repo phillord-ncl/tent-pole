@@ -4,6 +4,7 @@ import shutil
 import canvasapi.exceptions
 import panflute as pf
 import pytest
+import toml
 
 from tent_pole import canvas_filter
 from tent_pole import course_import_filter as cif
@@ -331,3 +332,147 @@ def test_convert_unwraps_real_pygments_output_to_a_plain_code_block():
     assert "print('hi')" in markdown
     assert "style=" not in markdown
     assert "{." not in markdown  # no leftover bracketed-span syntax
+
+
+## Reconstructing {include=...} from canvas_filter's own real output
+
+def build_include_html(source_dir, filename="demo.py", source="print(1)\n",
+                        file_id=55, output=False, stout=False, crash=False,
+                        hide_crash=False):
+    """The real HTML canvas_filter.code_filter produces for an
+    include='d code block, built the same way canvas_filter's own tests
+    do (a real local file + its .tpf), so the reconstruction is proven
+    against actual forward-filter output rather than a hand-guessed
+    shape."""
+    source_path = source_dir / filename
+    source_path.write_text(source)
+    with open(str(source_path) + ".tpf", "w") as fh:
+        toml.dump({"id": file_id}, fh)
+
+    attributes = {"include": str(source_path)}
+    stem = str(source_path.with_suffix(""))
+    if output:
+        attributes["output"] = "true"
+        (source_dir / (source_path.stem + ".out")).write_text("1\n")
+    if stout:
+        attributes["stout"] = "true"
+        (source_dir / (source_path.stem + ".stout")).write_text(">>> print(1)\n1\n")
+    if crash:
+        attributes["crash"] = "true"
+        (source_dir / (source_path.stem + ".crash")).write_text("Traceback...\n")
+    if hide_crash:
+        attributes["hide_crash"] = "true"
+
+    elem = pf.CodeBlock("", classes=["python"], attributes=attributes)
+    blocks = canvas_filter.code_filter(elem, doc=None)
+    return pf.convert_text(pf.Doc(*blocks), input_format="panflute", output_format="html")
+
+
+def test_convert_reconstructs_bare_include_directive(tmp_path):
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+    html = build_include_html(source_dir, filename="demo.py", file_id=55)
+
+    context = cif.ImportContext(
+        FakeCourseForImport([FakeCanvasFile("demo.py", content=b"print(1)\n", id=55)]),
+        page_slugs=[], output_dir=str(target_dir),
+    )
+    markdown = cif.convert(html, context)
+
+    assert '{.python include="demo.py"}' in markdown
+    assert "print(1)" not in markdown  # not a literal copy of the source
+    assert "Taken from" not in markdown
+    assert (target_dir / "demo.py").read_text() == "print(1)\n"
+
+
+def test_convert_reconstructs_include_with_output_attribute(tmp_path):
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+    html = build_include_html(source_dir, filename="demo.py", file_id=55, output=True)
+
+    context = cif.ImportContext(
+        FakeCourseForImport([FakeCanvasFile("demo.py", content=b"print(1)\n", id=55)]),
+        page_slugs=[], output_dir=str(target_dir),
+    )
+    markdown = cif.convert(html, context)
+
+    assert 'include="demo.py"' in markdown
+    assert 'output="true"' in markdown
+    assert "Outputs:" not in markdown
+
+
+def test_convert_infers_no_language_class_for_an_unknown_extension(tmp_path):
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+    html = build_include_html(source_dir, filename="demo.txt", source="hello\n", file_id=55)
+
+    context = cif.ImportContext(
+        FakeCourseForImport([FakeCanvasFile("demo.txt", content=b"hello\n", id=55)]),
+        page_slugs=[], output_dir=str(target_dir),
+    )
+    markdown = cif.convert(html, context)
+
+    assert 'include="demo.txt"' in markdown
+    assert ".python" not in markdown
+
+
+def test_convert_falls_back_to_literal_code_when_include_file_missing(tmp_path):
+    """The include='d file's own .tpf id no longer resolves on Canvas
+    (same real-world drift as any other file link) -- nothing was
+    downloaded to reconstruct include= against, so the best-effort
+    literal code block (with its now-inert "Taken from:" link) is kept
+    instead of inventing a reference to a file that was never fetched."""
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+    html = build_include_html(source_dir, filename="demo.py", file_id=404)
+
+    context = cif.ImportContext(FakeCourseForImport([]), page_slugs=[], output_dir=str(target_dir))
+    markdown = cif.convert(html, context)
+
+    assert "include=" not in markdown
+    assert "print(1)" in markdown
+
+
+## Video embeds -- canvas_filter's mp4 -> <iframe data-media-id=...>
+## has no download path at all (no media-object API support), and left
+## alone pandoc's HTML reader silently drops any tag it doesn't
+## recognise, iframe included -- confirmed against real Canvas content.
+
+VIDEO_IFRAME_HTML = (
+    '<p>This is a link to a video</p>\n'
+    '<p>\n<iframe style="width: 400px; height: 225px; display: inline-block;" '
+    'title="Video player for demo.mp4" data-media-type="video" '
+    'src="https://canvas.test/media_objects_iframe/m-abc123?type=video" '
+    'allowfullscreen="allowfullscreen" allow="fullscreen" '
+    'data-media-id="m-abc123" loading="lazy"></iframe>\n</p>\n'
+    '<p>Complete</p>\n'
+    '<script src="https://cdn.test/theme-injected.js"></script>'
+)
+
+
+def test_convert_does_not_silently_drop_a_video_embed(capsys):
+    context = cif.ImportContext(courseobj=None, page_slugs=[], output_dir=".")
+    markdown = cif.convert(VIDEO_IFRAME_HTML, context)
+
+    assert "This is a link to a video" in markdown
+    assert "Complete" in markdown
+    assert "demo.mp4" in markdown
+    assert "<iframe" not in markdown
+    captured = capsys.readouterr()
+    assert "demo.mp4" in captured.out
+
+
+def test_convert_strips_theme_injected_script_tags():
+    context = cif.ImportContext(courseobj=None, page_slugs=[], output_dir=".")
+    markdown = cif.convert(VIDEO_IFRAME_HTML, context)
+
+    assert "script" not in markdown
+    assert "theme-injected" not in markdown
