@@ -8,6 +8,7 @@ import sys
 
 from . import config
 from . import course
+from . import course_import
 from . import file
 from . import module
 from . import page
@@ -59,6 +60,7 @@ def init(no_git):
 
 main.add_command(config.config)
 main.add_command(course.course)
+main.add_command(course_import.import_command)
 main.add_command(file.file)
 main.add_command(module.module)
 main.add_command(page.page)
