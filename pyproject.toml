@@ -19,7 +19,7 @@ canvasapi = "^3.6.0"
 click = "^7.1.2"
 appdirs = "^1.4.4"
 toml = "^0.10.1"
-dpath = "^2.0.1"
+dpath = "~2.0.1"
 stringcase = "^1.2.0"
 panflute = "^2.3.1"
 pygments = "^2.19"
@@ -42,5 +42,5 @@ markers = [
 addopts = "-m 'not canvas'"
 
 [build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
