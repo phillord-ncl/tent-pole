@@ -1,4 +1,5 @@
 import datetime
+import html
 import os
 import re
 import tempfile
@@ -58,7 +59,14 @@ def code_filter(elem, doc):
     if lang:
         highlighted = highlight_source(content, lang)
     else:
-        highlighted = "<pre><code>" + content + "\n</code></pre>"
+        ## html.escape: Pygments escapes its own output, but this branch
+        ## builds the <pre><code> tag by hand -- unescaped, `content`
+        ## containing anything tag-shaped (a Python traceback's
+        ## "<module>", for instance) becomes literal markup rather than
+        ## text, which Canvas's own sanitizer then silently strips on
+        ## save. Confirmed against a real Canvas page, not assumed: the
+        ## same text pre-escaped survives a push untouched.
+        highlighted = "<pre><code>" + html.escape(content) + "\n</code></pre>"
 
     if not attrs.include:
         f.close()

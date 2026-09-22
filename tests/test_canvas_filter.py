@@ -49,6 +49,19 @@ def test_code_filter_no_language_wraps_plain_pre_code():
     assert raw.text == "<pre><code>plain text\n</code></pre>"
 
 
+def test_code_filter_no_language_html_escapes_tag_shaped_content():
+    """A plain (no-language) code block is built by hand, unlike the
+    highlighted branch which gets Pygments' own escaping for free --
+    tag-shaped text (a Python traceback's "<module>", for instance)
+    must not become literal markup, or Canvas's own sanitizer silently
+    strips it on save (confirmed against a real Canvas page)."""
+    elem = pf.CodeBlock('File "x.py", line 1, in <module>', classes=[])
+    result = canvas_filter.code_filter(elem, doc=None)
+    raw = result[0]
+    assert isinstance(raw, pf.RawBlock)
+    assert raw.text == '<pre><code>File &quot;x.py&quot;, line 1, in &lt;module&gt;\n</code></pre>'
+
+
 def test_code_filter_with_language_highlights_via_pygments():
     elem = pf.CodeBlock("def f(): pass", classes=["python"])
     result = canvas_filter.code_filter(elem, doc=None)
