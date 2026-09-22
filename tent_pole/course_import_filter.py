@@ -245,8 +245,16 @@ def __taken_from_link_target(elem):
 
 
 def __section_label(elem, label):
-    return (isinstance(elem, Para) and len(elem.content) == 1
-            and isinstance(elem.content[0], Str) and elem.content[0].text == label)
+    """True if elem is a bare Para(Str(label)), accepting the label
+    with or without its trailing colon -- real content shows the same
+    older-canvas_filter wording drift as "Take from: " vs "Taken from:
+    " here too: "Outputs"/"Prints"/"Crashes" with no colon, confirmed
+    against real content, alongside today's "Outputs:"/etc."""
+    if not (isinstance(elem, Para) and len(elem.content) == 1
+            and isinstance(elem.content[0], Str)):
+        return False
+    text = elem.content[0].text
+    return text == label or text == label.rstrip(":")
 
 
 def __fold_code_includes(items, context):

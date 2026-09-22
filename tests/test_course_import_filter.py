@@ -427,6 +427,46 @@ def test_convert_reconstructs_include_with_output_attribute(tmp_path):
     assert "Outputs:" not in markdown
 
 
+def test_convert_reconstructs_output_attribute_from_legacy_no_colon_wording(tmp_path):
+    """Real content shows the same older-canvas_filter wording drift
+    here as "Take from: " vs "Taken from: " -- "Outputs"/"Prints"/
+    "Crashes" with no trailing colon, confirmed against real content,
+    not assumed."""
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+    html = build_include_html(source_dir, filename="demo.py", file_id=55, output=True)
+    html = html.replace("Outputs:", "Outputs")
+
+    context = cif.ImportContext(
+        FakeCourseForImport([FakeCanvasFile("demo.py", content=b"print(1)\n", id=55)]),
+        page_slugs=[], output_dir=str(target_dir),
+    )
+    markdown = cif.convert(html, context)
+
+    assert 'output="true"' in markdown
+
+
+def test_convert_reconstructs_stout_and_crash_attributes(tmp_path):
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+    html = build_include_html(source_dir, filename="demo.py", file_id=55, stout=True, crash=True)
+
+    context = cif.ImportContext(
+        FakeCourseForImport([FakeCanvasFile("demo.py", content=b"print(1)\n", id=55)]),
+        page_slugs=[], output_dir=str(target_dir),
+    )
+    markdown = cif.convert(html, context)
+
+    assert 'stout="true"' in markdown
+    assert 'crash="true"' in markdown
+    assert "Prints:" not in markdown
+    assert "Crashes:" not in markdown
+
+
 def test_convert_infers_no_language_class_for_an_unknown_extension(tmp_path):
     source_dir = tmp_path / "source"
     source_dir.mkdir()
