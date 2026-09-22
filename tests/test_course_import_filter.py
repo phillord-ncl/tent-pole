@@ -1,6 +1,7 @@
 import os
 import shutil
 
+import canvasapi.exceptions
 import panflute as pf
 import pytest
 
@@ -28,6 +29,8 @@ class FakeCourseForImport:
 
     def get_file(self, file_id):
         self.get_file_calls.append(file_id)
+        if int(file_id) not in self._files_by_id:
+            raise canvasapi.exceptions.ResourceDoesNotExist("Not Found")
         return self._files_by_id[int(file_id)]
 
 
@@ -57,6 +60,28 @@ def test_download_file_dedups_repeated_ids(tmp_path):
     assert context.courseobj.get_file_calls == [7]
 
 
+def test_download_file_returns_none_for_a_file_no_longer_on_canvas(tmp_path, capsys):
+    context = make_context(tmp_path)
+
+    filename = context.download_file(404)
+
+    assert filename is None
+    captured = capsys.readouterr()
+    assert "404" in captured.out
+
+
+def test_download_file_caches_a_missing_file_too(tmp_path):
+    """A missing file must not be re-fetched (and re-warned about) on
+    every reference to it -- the failure itself is cached, same as a
+    successful download's filename."""
+    context = make_context(tmp_path)
+
+    context.download_file(404)
+    context.download_file(404)
+
+    assert context.courseobj.get_file_calls == [404]
+
+
 def test_download_file_disambiguates_name_collision(tmp_path):
     (tmp_path / "diagram.png").write_bytes(b"already here, from another page")
     context = make_context(tmp_path, files=[FakeCanvasFile("diagram.png", id=7)])
@@ -81,6 +106,16 @@ def test_image_filter_rewrites_to_local_downloaded_filename(tmp_path):
 def test_image_filter_leaves_non_file_urls_unchanged():
     elem = pf.Image(pf.Str("x"), url="https://example.com/pic.png")
     assert cif.image_filter(elem, context=None) is None
+
+
+def test_image_filter_leaves_url_unchanged_when_file_is_missing(tmp_path):
+    context = make_context(tmp_path)
+    url = "https://canvas.test/courses/1/files/404/preview"
+    elem = pf.Image(pf.Str("x"), url=url)
+
+    result = cif.image_filter(elem, context)
+
+    assert result.url == url
 
 
 ## link_filter
@@ -130,6 +165,16 @@ def test_link_filter_leaves_external_link_untouched(tmp_path):
     result = cif.link_filter(elem, context)
 
     assert result.url == "https://example.com/foo"
+
+
+def test_link_filter_leaves_url_unchanged_when_file_is_missing(tmp_path):
+    context = make_context(tmp_path)
+    url = "https://canvas.test/courses/1/files/404/download"
+    elem = pf.Link(pf.Str("x"), url=url)
+
+    result = cif.link_filter(elem, context)
+
+    assert result.url == url
 
 
 ## import_filter -- managed marker stripping

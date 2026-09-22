@@ -2,6 +2,7 @@ import functools
 import os
 import re
 
+import canvasapi.exceptions
 from panflute import *
 
 FILE_ID_PATTERN = re.compile(r'/files/(\d+)')
@@ -24,13 +25,26 @@ class ImportContext:
         self.used_filenames = set(os.listdir(output_dir))
 
     def download_file(self, file_id):
+        """The local filename an earlier or fresh download landed under,
+        or None if Canvas no longer has this file (real-world drift on a
+        long-lived course -- a link can outlive the file it pointed at).
+        A missing file is reported, not a crash: the link/image referring
+        to it is left as-is by the caller rather than losing the whole
+        import over one stale reference."""
         if file_id in self.file_cache:
             return self.file_cache[file_id]
 
-        canvas_file = self.courseobj.get_file(file_id)
+        try:
+            canvas_file = self.courseobj.get_file(file_id)
+            content = canvas_file.get_contents(binary=True)
+        except canvasapi.exceptions.CanvasException as e:
+            print("Warning: file {} could not be downloaded ({}), leaving its link/image as-is".format(file_id, e))
+            self.file_cache[file_id] = None
+            return None
+
         filename = self.__unique_filename(canvas_file.filename)
         with open(os.path.join(self.output_dir, filename), "wb") as fh:
-            fh.write(canvas_file.get_contents(binary=True))
+            fh.write(content)
 
         self.file_cache[file_id] = filename
         return filename
@@ -92,7 +106,8 @@ def image_filter(elem, context):
         return None
 
     local_filename = context.download_file(file_id)
-    elem.url = local_filename
+    if local_filename is not None:
+        elem.url = local_filename
     return elem
 
 
@@ -105,7 +120,9 @@ def link_filter(elem, context):
 
     file_id = __extract_file_id(elem.url)
     if file_id is not None:
-        elem.url = context.download_file(file_id)
+        local_filename = context.download_file(file_id)
+        if local_filename is not None:
+            elem.url = local_filename
         return elem
 
     return elem
