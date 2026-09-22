@@ -8,6 +8,31 @@ from panflute import *
 FILE_ID_PATTERN = re.compile(r'/files/(\d+)')
 PAGE_SLUG_PATTERN = re.compile(r'/pages/([^/?#]+)(#[^?]*)?')
 
+## GNU source-highlight's own markup, predating tent-pole's switch to
+## Pygments (see canvas_filter.highlight_source) -- real courses that
+## have been live a while still have plenty of pages built with the
+## old highlighter, so this isn't legacy in the sense of rare. Each
+## source line is its own <font color="#000000">N:</font>-prefixed
+## run inside a single <pre><tt>...</tt></pre>; pandoc's HTML reader
+## has no special handling for <tt>/<font>/<b>/<i> the way it does for
+## <pre><code>, so left alone this comes out as a wall of nested
+## Code/Strong/Emph spans with literal "N: " text, not a code block.
+## Stripped back to a plain <pre><code> block here, before pandoc ever
+## sees it, so it round-trips through the same already-correct generic
+## path as an ordinary code block.
+LEGACY_HIGHLIGHT_BLOCK_PATTERN = re.compile(r'<pre><tt>(.*?)</tt></pre>', re.DOTALL)
+LEGACY_LINE_NUMBER_PATTERN = re.compile(r'<font[^>]*>\d+:</font> ?', re.MULTILINE)
+LEGACY_TAG_PATTERN = re.compile(r'</?(?:font|b|i|u)\b[^>]*>')
+
+
+def __unwrap_legacy_source_highlight(html):
+    def unwrap(match):
+        inner = LEGACY_LINE_NUMBER_PATTERN.sub("", match.group(1))
+        inner = LEGACY_TAG_PATTERN.sub("", inner)
+        return "<pre><code>" + inner + "</code></pre>"
+
+    return LEGACY_HIGHLIGHT_BLOCK_PATTERN.sub(unwrap, html)
+
 
 class ImportContext:
     """Per-run state threaded through import_filter via functools.partial:
@@ -100,6 +125,14 @@ def __pygments_plain_text(elem):
     return "".join(parts).replace("\xa0", " ")
 
 
+## Attributes worth keeping from a hand-authored (Canvas RCE) <img> --
+## everything else Canvas/pandoc attaches (the file id as #identifier,
+## loading="lazy", data-api-endpoint/-returntype) is editor/API
+## bookkeeping, not authoring intent, and would otherwise leak into the
+## markdown as {#123 loading="lazy" api-endpoint="..." ...} clutter.
+IMAGE_ATTRIBUTES_TO_KEEP = ("width", "height")
+
+
 def image_filter(elem, context):
     file_id = __extract_file_id(elem.url)
     if file_id is None:
@@ -108,6 +141,11 @@ def image_filter(elem, context):
     local_filename = context.download_file(file_id)
     if local_filename is not None:
         elem.url = local_filename
+
+    elem.identifier = ""
+    elem.attributes = {
+        k: v for k, v in elem.attributes.items() if k in IMAGE_ATTRIBUTES_TO_KEEP
+    }
     return elem
 
 
@@ -151,6 +189,7 @@ def convert(html, context):
     cache that can't cross a subprocess boundary, so the HTML is parsed
     to a panflute Doc, walked with import_filter bound to this run's
     context, and converted back to markdown, all within this process."""
+    html = __unwrap_legacy_source_highlight(html)
     doc = convert_text(html, input_format="html", output_format="panflute", standalone=True)
     action = functools.partial(import_filter, context=context)
     doc = run_filters([action], doc=doc)

@@ -108,6 +108,37 @@ def test_image_filter_leaves_non_file_urls_unchanged():
     assert cif.image_filter(elem, context=None) is None
 
 
+def test_image_filter_strips_canvas_editor_cruft(tmp_path):
+    """A hand-authored (Canvas RCE) image carries editor/API bookkeeping
+    -- the file id as #identifier, loading="lazy",
+    data-api-endpoint/-returntype -- that pandoc would otherwise leak
+    straight into the markdown as {#123 loading="lazy" ...} clutter."""
+    context = make_context(tmp_path, files=[FakeCanvasFile("diagram.png", id=7)])
+    elem = pf.Image(
+        pf.Str("x"), url="https://canvas.test/courses/1/files/7/preview",
+        identifier="7",
+        attributes={"loading": "lazy", "api-endpoint": "https://canvas.test/api/v1/...",
+                    "api-returntype": "File"},
+    )
+
+    result = cif.image_filter(elem, context)
+
+    assert result.identifier == ""
+    assert dict(result.attributes) == {}
+
+
+def test_image_filter_keeps_width_and_height(tmp_path):
+    context = make_context(tmp_path, files=[FakeCanvasFile("diagram.png", id=7)])
+    elem = pf.Image(
+        pf.Str("x"), url="https://canvas.test/courses/1/files/7/preview",
+        attributes={"width": "400", "loading": "lazy"},
+    )
+
+    result = cif.image_filter(elem, context)
+
+    assert dict(result.attributes) == {"width": "400"}
+
+
 def test_image_filter_leaves_url_unchanged_when_file_is_missing(tmp_path):
     context = make_context(tmp_path)
     url = "https://canvas.test/courses/1/files/404/preview"
@@ -213,6 +244,42 @@ def test_import_filter_unwraps_pygments_highlight_block_to_plain_codeblock(tmp_p
 
     assert isinstance(result, pf.CodeBlock)
     assert result.text == original
+
+
+## GNU source-highlight (pre-Pygments) code blocks
+
+LEGACY_HELLO_WORLD_HTML = (
+    '<pre><tt><font color="#000000">1:</font> '
+    '<b><font color="#0000FF">print</font></b>'
+    '<font color="#990000">(</font>'
+    '<font color="#FF0000">"Hello World"</font>'
+    '<font color="#990000">)</font>\n'
+    '<font color="#000000">2:</font> </tt></pre>'
+)
+
+
+def test_convert_unwraps_legacy_source_highlight_block():
+    context = cif.ImportContext(courseobj=None, page_slugs=[], output_dir=".")
+    markdown = cif.convert(LEGACY_HELLO_WORLD_HTML, context)
+
+    assert 'print("Hello World")' in markdown
+    assert "<font" not in markdown
+    assert "1:" not in markdown
+
+
+def test_convert_preserves_indentation_in_legacy_source_highlight_block():
+    html = (
+        '<pre><tt><font color="#000000">1:</font> '
+        '<b><font color="#000080">def</font></b> f():\n'
+        '<font color="#000000">2:</font>     '
+        '<b><font color="#000080">return</font></b> 1\n'
+        '</tt></pre>'
+    )
+    context = cif.ImportContext(courseobj=None, page_slugs=[], output_dir=".")
+    markdown = cif.convert(html, context)
+
+    assert "def f():" in markdown
+    assert "    return 1" in markdown
 
 
 ## Round trip through the real forward filter, mirroring
