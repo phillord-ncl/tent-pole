@@ -1,5 +1,29 @@
 # Releases
 
+## 0.5.0
+
+- Added `tent-pole import <course> [directory]` -- pulls an existing
+  Canvas course down to a local tent-pole project: pages to
+  best-effort markdown (including reconstructing `{include=...}`
+  directives against the real downloaded source, not a frozen copy of
+  the rendered output), their images/files, and module structure,
+  scaffolded like `tent-pole init`. Strictly read-only against Canvas.
+  Quizzes and other non-page module items are reported as not
+  imported, never silently dropped. See `docs/import-a-course.md`.
+- Fixed: a plain (no-language) code block's content wasn't
+  HTML-escaped before being spliced into `<pre><code>`, so tag-shaped
+  text (a Python traceback's `<module>`, for instance) silently
+  vanished when Canvas's sanitizer stripped it as markup.
+- Fixed: `file push` now passes `on_duplicate="overwrite"` -- Canvas's
+  own upload API defaults to renaming instead, so re-pushing an
+  already-uploaded file silently created a duplicate instead of
+  replacing it.
+- Fixed: `.tpp`/`.tpf`/`.tpm`/`.tpq`/`.out`/`.stout`/`.crash`/
+  `.test_out` are now `.PRECIOUS`, alongside the existing `.html` --
+  GNU Make was silently deleting them as build intermediates after a
+  successful `make`, disabling `push`'s drift checks and, for files,
+  risking an unconditional re-upload on the next build.
+
 ## 0.4.0
 
 - Removed `--tent-pole-dev` from `tent-pole init` -- `pipx install
