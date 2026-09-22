@@ -58,6 +58,21 @@ endif
 	@echo "  DEPS     $<"
 	$(Q)$(INCLUDE_DEPS_FILTER) $< > $@
 
+## .PRECIOUS on every stamp file below (here and %.html/%.tpp further
+## down): GNU Make deletes a file it built purely as a mid-chain step
+## toward some other target, once the overall build succeeds, unless
+## the file is .PRECIOUS/.SECONDARY or is itself the literal
+## command-line goal. A leaf Makefile's own `all: $(TARGETS_TPP_FROM_MD)`
+## makes %.tpp the direct goal of that invocation, so it mostly escapes
+## this -- but %.tpf and %.out/%.stout/%.crash (make-rules/python/
+## rules.inc) sit one level deeper, as prerequisites of %.html (see a
+## page's own %.tpd), not of `all` directly, which is exactly the
+## shape Make auto-deletes. Confirmed empirically, not assumed: a
+## synthetic two-hop pattern-rule chain reproduces the exact same
+## deletion. Losing these isn't just wasted rebuild effort -- file
+## push has no existence/drift check of its own (unlike page push),
+## so a missing .tpf means the next build re-uploads unconditionally.
+.PRECIOUS: %.tpf
 %.tpf: %
 	@echo "  PUSH     $<"
 	$(Q)$(TENT_POLE) file push $<
@@ -71,6 +86,7 @@ endif
 ## %.tpf: % above, so make prefers this one for an actual .mp4 --
 ## everything else keeps the plain dump, which was always a no-op for
 ## a non-media file anyway (media_entry_id is never "maybe" for one).
+.PRECIOUS: %.mp4.tpf
 %.mp4.tpf: %.mp4
 	@echo "  PUSH     $<"
 	$(Q)$(TENT_POLE) file push $<
@@ -82,6 +98,7 @@ endif
 	@echo "  HTML     $<"
 	$(Q)pandoc --filter=$(CANVAS_FILTER) $< > $@
 
+.PRECIOUS: %.tpp
 %.tpp: %.html
 	@echo "  PUSH     $<"
 	$(Q)$(TENT_POLE) page push $<
@@ -108,6 +125,7 @@ endif
 ##
 ## push already both creates-or-updates and writes its own stamp, so
 ## unlike a page there's no separate dump step needed here.
+.PRECIOUS: %.tpq
 %.tpq: %.quiz.md
 	@echo "  QUIZ     $<"
 	$(Q)$(TENT_POLE) quiz push $<
@@ -125,6 +143,7 @@ endif
 ## No separate create-module target -- reorder gets-or-creates the
 ## module itself, so this is the only step ever needed, even on a
 ## completely fresh course.
+.PRECIOUS: tent-pole.toml.tpm
 tent-pole.toml.tpm: tent-pole.toml
 	@echo "  REORDER  $<"
 	$(Q)$(TENT_POLE) module reorder
