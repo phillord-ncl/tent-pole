@@ -149,7 +149,16 @@ def test_push_uploads_into_the_tent_pole_folder(tmp_path, monkeypatch):
     """The whole point of this feature: every push lands in a dedicated
     folder (fixed name, default-on -- not opt-in), so "did tent-pole
     manage this" becomes a cheap folder check later, instead of
-    landing in Canvas's generic "unfiled" folder like everything else."""
+    landing in Canvas's generic "unfiled" folder like everything else.
+
+    Also asserts on_duplicate="overwrite": Canvas's own upload API
+    defaults to "rename" when this isn't passed, leaving any existing
+    same-named file untouched and silently creating a second copy
+    instead of replacing it -- confirmed against a real course, files
+    pushed without this accumulate duplicates on every re-push. Always
+    correct to overwrite here specifically because every push is
+    scoped to TENT_POLE_FOLDER, so a same-named collision there is
+    never an unrelated file."""
     local = write_local_file(tmp_path / "example.txt")
     fake_course = FakeCourseForFile([])
     monkeypatch.setattr(tp_file.course, "course_obj", lambda: fake_course)
@@ -161,7 +170,10 @@ def test_push_uploads_into_the_tent_pole_folder(tmp_path, monkeypatch):
     assert len(fake_course.upload_calls) == 1
     uploaded_filename, kwargs = fake_course.upload_calls[0]
     assert uploaded_filename == local
-    assert kwargs == {"parent_folder_path": tp_file.TENT_POLE_FOLDER}
+    assert kwargs == {
+        "parent_folder_path": tp_file.TENT_POLE_FOLDER,
+        "on_duplicate": "overwrite",
+    }
     assert tp_file.TENT_POLE_FOLDER == "tent-pole"
 
 

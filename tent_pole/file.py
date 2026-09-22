@@ -105,7 +105,17 @@ def dump(filename, wait):
 @file.command(help="Create or Update a file")
 @click.argument("filename")
 def push(filename):
-    course.course_obj().upload(filename, parent_folder_path=TENT_POLE_FOLDER)
+    ## on_duplicate="overwrite": Canvas's own upload API defaults to
+    ## "rename" when this isn't passed, silently leaving the existing
+    ## file untouched and creating a second, differently-named copy
+    ## instead -- confirmed against a real course, not assumed.
+    ## Overwriting is always correct here specifically because every
+    ## push is scoped to TENT_POLE_FOLDER: a same-named collision
+    ## there is never an unrelated file, it's this exact file's own
+    ## previous push.
+    course.course_obj().upload(
+        filename, parent_folder_path=TENT_POLE_FOLDER, on_duplicate="overwrite"
+    )
 
 @file.command(help="Check whether the local file has changed since it was "
                     "last pushed. Local only, no network access.")
