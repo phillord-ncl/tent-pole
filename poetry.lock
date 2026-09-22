@@ -127,14 +127,14 @@ files = [
 
 [[package]]
 name = "dpath"
-version = "2.0.7"
+version = "2.2.0"
 description = "Filesystem-like pathing and searching for dictionaries"
 optional = false
-python-versions = ">=3"
+python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "dpath-2.0.7-py3-none-any.whl", hash = "sha256:4ba3bc9ebb3081071c65ed621dda04c1efc3a2655f8ee4869417efeccc05b3da"},
-    {file = "dpath-2.0.7.tar.gz", hash = "sha256:8e979b53af32fc431dd3a03eb57ebff63f6a5b68e52ff7ffd53232a97ec42665"},
+    {file = "dpath-2.2.0-py3-none-any.whl", hash = "sha256:b330a375ded0a0d2ed404440f6c6a715deae5313af40bbb01c8a41d891900576"},
+    {file = "dpath-2.2.0.tar.gz", hash = "sha256:34f7e630dc55ea3f219e555726f5da4b4b25f2200319c8e6902c394258dd6a3e"},
 ]
 
 [[package]]
@@ -567,4 +567,4 @@ python-discovery = ">=1.6"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4.0"
-content-hash = "046537de5d49b0a9fff8c2d0e466eb347cbca1a510066bfd387c4f7746c9ecfc"
+content-hash = "8722eebce0288555c8cc82ff368f652ce03d132fc02c39fb185dd487127cbc25"

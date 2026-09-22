@@ -1,6 +1,6 @@
 import appdirs
 import click
-import dpath.util
+import dpath
 import functools
 import os
 import toml
@@ -9,7 +9,7 @@ from canvasapi import Canvas
 
 def get_maybe(config,key):
     try:
-        return dpath.util.get(config, key)
+        return dpath.get(config, key)
     except KeyError:
         return None
 
@@ -19,13 +19,13 @@ def fetch_config(files):
     ## initial {} means "no config file anywhere" returns an empty config
     ## instead of crashing (functools.reduce has no sane default over an
     ## empty sequence otherwise)
-    ## MERGE_REPLACE: dpath's default (MERGE_ADDITIVE) concatenates
+    ## MergeType.REPLACE: dpath's default (MergeType.ADDITIVE) concatenates
     ## list-valued keys instead of letting the closer file win, so e.g. a
     ## subdirectory's [module] items would get silently appended to an
     ## ancestor's rather than replacing it -- breaks the cascade's whole
     ## "closest wins" contract for any list-valued key.
     return functools.reduce(
-        lambda dst, src: dpath.util.merge(dst, src, flags=dpath.util.MERGE_REPLACE),
+        lambda dst, src: dpath.merge(dst, src, flags=dpath.MergeType.REPLACE),
         files, {}
     )
 
@@ -91,7 +91,7 @@ def config_module():
     )
 
 def config_module_items():
-    return dpath.util.get(CONFIG, "module/items")
+    return dpath.get(CONFIG, "module/items")
 
 def config_api_key():
     if use_test_config():
