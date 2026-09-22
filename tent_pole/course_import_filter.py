@@ -67,7 +67,13 @@ def __replace_video_iframes(page_html):
         label = title_match.group(1) if title_match else media_id_match.group(1)
         print("Warning: video embed {!r} could not be downloaded (no media-object "
               "download support), left as a note instead".format(label))
-        return "<p><em>[Video not imported: {}]</em></p>".format(html.escape(label))
+        ## Inline, not <p>...</p> -- the real HTML this replaces is
+        ## routinely already sitting inside its own surrounding <p>
+        ## (Canvas wraps embeds in one), and nesting a block <p> inside
+        ## that one leaves its original closing </p> dangling with
+        ## nothing left to match, surviving as literal "</p>" text once
+        ## +raw_html preserves unmatched tags rather than dropping them.
+        return "<em>[Video not imported: {}]</em>".format(html.escape(label))
 
     return VIDEO_IFRAME_PATTERN.sub(replace, page_html)
 
@@ -217,6 +223,15 @@ def link_filter(elem, context):
 LANGUAGE_BY_EXTENSION = {".py": "python"}
 
 
+## Real courses that have been live a while carry pages built by an
+## older canvas_filter that phrased this link "Take from: <file>" --
+## today's code_filter says "Taken from: " (with the "n") -- confirmed
+## against real content, not assumed; both are recognised so an older
+## push doesn't silently fall back to a literal code block just
+## because of a since-changed label.
+TAKEN_FROM_PREFIXES = ("Taken from: ", "Take from: ")
+
+
 def __taken_from_link_target(elem):
     """The link's url if elem is exactly the Para(Link(...)) that
     code_filter emits right after an include='d code block ("Taken
@@ -225,7 +240,8 @@ def __taken_from_link_target(elem):
             and isinstance(elem.content[0], Link)):
         return None
     link = elem.content[0]
-    return link.url if stringify(link).startswith("Taken from: ") else None
+    text = stringify(link)
+    return link.url if text.startswith(TAKEN_FROM_PREFIXES) else None
 
 
 def __section_label(elem, label):

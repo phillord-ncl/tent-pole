@@ -387,6 +387,28 @@ def test_convert_reconstructs_bare_include_directive(tmp_path):
     assert (target_dir / "demo.py").read_text() == "print(1)\n"
 
 
+def test_convert_reconstructs_include_directive_from_legacy_take_from_wording(tmp_path):
+    """Real courses that have been live a while carry pages built by an
+    older canvas_filter that phrased the link "Take from: <file>" (no
+    "n") -- confirmed against real content, not assumed. Must not
+    silently fall back to a literal code block just because the label
+    text changed at some point in tent-pole's own history."""
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+    html = build_include_html(source_dir, filename="demo.py", file_id=55)
+    html = html.replace("Taken from: ", "Take from: ")
+
+    context = cif.ImportContext(
+        FakeCourseForImport([FakeCanvasFile("demo.py", content=b"print(1)\n", id=55)]),
+        page_slugs=[], output_dir=str(target_dir),
+    )
+    markdown = cif.convert(html, context)
+
+    assert '{.python include="demo.py"}' in markdown
+
+
 def test_convert_reconstructs_include_with_output_attribute(tmp_path):
     source_dir = tmp_path / "source"
     source_dir.mkdir()
@@ -466,6 +488,13 @@ def test_convert_does_not_silently_drop_a_video_embed(capsys):
     assert "Complete" in markdown
     assert "demo.mp4" in markdown
     assert "<iframe" not in markdown
+    ## Regression: the fixture's iframe is already inside its own <p>
+    ## (real Canvas content wraps embeds this way) -- an earlier version
+    ## of the replacement nested a block <p> inside that one, leaving
+    ## the original closing </p> dangling with nothing left to match,
+    ## which survived as literal "</p>" text once +raw_html stopped
+    ## silently dropping unmatched tags.
+    assert "</p>" not in markdown
     captured = capsys.readouterr()
     assert "demo.mp4" in captured.out
 
