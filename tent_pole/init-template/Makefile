@@ -1,4 +1,4 @@
-{prelude}TENT_POLE ?= tent-pole
+TENT_POLE ?= tent-pole
 TENT_POLE_DIR := $(shell $(TENT_POLE) pkg-dir)
 include $(TENT_POLE_DIR)/make-rules/rules.inc
 include $(TENT_POLE_DIR)/make-rules/python/rules.inc
