@@ -1,5 +1,19 @@
 # Releases
 
+## 0.4.0
+
+- Removed `--tent-pole-dev` from `tent-pole init` -- `pipx install
+  --editable` covers the same need without any wrapper-script
+  machinery. See `docs/migration.md` for repos that adopted the old
+  flag's generated `dev-scripts/`.
+- Switched the build backend to `poetry-core`, needed for `pipx
+  install --editable` to work at all (the old `poetry.masonry.api`
+  backend doesn't implement PEP 660).
+- Fixed: dpath's `MERGE_REPLACE` flag was removed in dpath 2.1,
+  breaking config loading on a fresh install; now uses
+  `dpath.MergeType.REPLACE`, and the loose `dpath` constraint that let
+  this happen is tightened to `^2.1.0`.
+
 ## 0.3.0
 
 - Author Canvas quizzes from a `.quiz.md` markdown dialect --
