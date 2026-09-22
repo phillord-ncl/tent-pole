@@ -1,10 +1,8 @@
 import canvasapi.exceptions
 import click
 import dpath
-import importlib.resources
 import logging
 import os
-import subprocess
 import sys
 
 
@@ -14,6 +12,7 @@ from . import file
 from . import module
 from . import page
 from . import quiz
+from . import scaffold
 
 
 logger = logging.getLogger("canvasapi")
@@ -45,36 +44,6 @@ def main(course, beta):
 def pkg_dir():
     print(os.path.dirname(__file__))
 
-def __init_template(name):
-    """Raw text of tent_pole/init-template/<name> -- the source for
-    everything `tent-pole init` writes, kept as real files rather than
-    Python string literals so they're easy to read and edit directly."""
-    return importlib.resources.files("tent_pole").joinpath(
-        "init-template", name
-    ).read_text()
-
-def __write_if_absent(path, content):
-    if os.path.exists(path):
-        print("{} already exists, skipping".format(path))
-        return
-    with open(path, "w") as f:
-        f.write(content)
-    print("Created {}".format(path))
-
-def __git_init_unless_already_in_repo():
-    try:
-        inside_repo = subprocess.run(
-            ["git", "rev-parse", "--is-inside-work-tree"],
-            capture_output=True, text=True,
-        ).returncode == 0
-    except FileNotFoundError:
-        raise click.ClickException("git not found on PATH")
-
-    if inside_repo:
-        print("Already inside a git repository, skipping git init")
-    else:
-        subprocess.run(["git", "init"], check=True)
-
 @main.command(help="Scaffold a new tent-pole project in the current "
               "directory: git init, a bootstrap Makefile, a starter "
               "tent-pole.toml, and hello.md. Safe to re-run -- never "
@@ -82,11 +51,11 @@ def __git_init_unless_already_in_repo():
 @click.option("--no-git", is_flag=True, help="Don't run git init.")
 def init(no_git):
     if not no_git:
-        __git_init_unless_already_in_repo()
+        scaffold.git_init_unless_already_in_repo()
 
-    __write_if_absent("Makefile", __init_template("Makefile"))
-    __write_if_absent("tent-pole.toml", __init_template("tent-pole.toml"))
-    __write_if_absent("hello.md", __init_template("hello.md"))
+    scaffold.write_if_absent("Makefile", scaffold.makefile_content())
+    scaffold.write_if_absent("tent-pole.toml", scaffold.init_template("tent-pole.toml"))
+    scaffold.write_if_absent("hello.md", scaffold.init_template("hello.md"))
 
 main.add_command(config.config)
 main.add_command(course.course)
