@@ -19,6 +19,11 @@ def run_build(argv):
     own interpreter, never a separately invoked `doit` -- so
     `from tent_pole.doit_rules... import ...` inside a dodo.py can
     never fail to resolve against the wrong installed environment."""
+    ## A course repo's own directory tree is content to look at and
+    ## edit, not a Python package -- a __pycache__ next to every
+    ## dodo.py (and next to any course-level module it imports, e.g.
+    ## make-inc/doit_rules.py) is pure clutter nobody asked for.
+    sys.dont_write_bytecode = True
     if os.path.exists("dodo.py"):
         main = DoitMain()
     else:

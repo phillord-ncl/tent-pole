@@ -50,6 +50,11 @@ def _run(py, target, mode):
         elif mode == "shell":
             with open(py) as src:
                 subprocess.run([PYTHON_SHELL], cwd=directory, stdin=src, stdout=fh, check=True)
+        elif mode == "test":
+            ## Non-zero exit (a failing test) is not a build failure --
+            ## same tolerance as "stderr" above.
+            subprocess.run(["pytest", os.path.basename(py)], cwd=directory, stdout=fh)
+            fh.write(" \n")
 
 
 def task_out():
