@@ -30,6 +30,22 @@ def test_is_local_asset_url_true_for_a_real_attachment():
     assert deps_filter.is_local_asset_url("handout.pdf") is True
 
 
+def test_is_local_asset_url_false_for_page_reference_with_a_fragment():
+    """Regression: a link to a specific section of another page
+    (introduction.md#variables) was misclassified as a real asset --
+    the raw url's own "extension" is ".md#variables", not in the
+    excluded set, because the fragment was never stripped first."""
+    assert deps_filter.is_local_asset_url("introduction.md#variables") is False
+    assert deps_filter.is_local_asset_url("introduction.html#variables") is False
+
+
+def test_is_local_asset_url_true_for_a_real_attachment_with_a_fragment():
+    """A genuine asset link can carry a fragment too (e.g. a browser
+    PDF viewer's #page=3) -- still a real attachment, extension check
+    just needs to ignore the fragment either way."""
+    assert deps_filter.is_local_asset_url("handout.pdf#page=3") is True
+
+
 ## collect_deps -- CodeBlock
 
 def test_collect_deps_include_needs_raw_and_tpf_for_html_but_only_raw_for_full():

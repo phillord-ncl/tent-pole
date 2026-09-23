@@ -25,11 +25,17 @@ def is_local_asset_url(url):
     local asset), plus excluding .md/.html: a link to another authored
     page is a reference, never a transclusion, so it's not a build
     dependency at all, regardless of extension. See issue #23 -- the
-    live link_filter doesn't make this same distinction (yet)."""
+    live link_filter doesn't make this same distinction (yet).
+
+    Extension is checked against parsed.path, not the raw url: a link
+    to a specific section of another page (introduction.md#variables)
+    is exactly the same kind of reference, but checking the raw url's
+    own "extension" would see ".md#variables" -- not in the excluded
+    set -- and misclassify it as a real attachment to push."""
     parsed = urlparse(url)
     if parsed.netloc or parsed.scheme:
         return False
-    _, ext = os.path.splitext(url)
+    _, ext = os.path.splitext(parsed.path)
     return ext not in ("", ".md", ".html")
 
 
