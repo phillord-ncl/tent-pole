@@ -17,15 +17,18 @@ def no_ambient_git_dir(monkeypatch):
     monkeypatch.delenv("GIT_WORK_TREE", raising=False)
 
 
-def test_init_writes_makefile_toml_and_hello(tmp_path, monkeypatch):
+def test_init_writes_toml_and_hello(tmp_path, monkeypatch):
+    """No Makefile: `tent-pole build` needs no local build file at all
+    to work in a fresh project -- its built-in doit rules cover a
+    plain markdown-pages course by default, so there's nothing for
+    init to scaffold there any more (see doit_rules/__init__.py)."""
     monkeypatch.chdir(tmp_path)
 
     result = CliRunner().invoke(main, ["init"])
 
     assert result.exit_code == 0, result.output
-    assert (tmp_path / "Makefile").exists()
+    assert not (tmp_path / "Makefile").exists()
     assert (tmp_path / "hello.md").read_text() == "# Hello\n"
-    assert "TENT_POLE ?= tent-pole\n" in (tmp_path / "Makefile").read_text()
     assert (tmp_path / ".git").exists()
 
     toml = (tmp_path / "tent-pole.toml").read_text()
@@ -64,6 +67,5 @@ def test_init_no_git_flag_skips_git_init(tmp_path, monkeypatch):
 
     assert result.exit_code == 0, result.output
     assert not (tmp_path / ".git").exists()
-    assert (tmp_path / "Makefile").exists()
     assert (tmp_path / "tent-pole.toml").exists()
     assert (tmp_path / "hello.md").exists()

@@ -15,10 +15,6 @@ def init_template(name):
     ).read_text()
 
 
-def makefile_content():
-    return init_template("Makefile")
-
-
 def write_if_absent(path, content):
     if os.path.exists(path):
         print("{} already exists, skipping".format(path))

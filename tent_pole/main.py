@@ -64,15 +64,14 @@ def help_command(ctx, command_name):
         click.echo(command.get_help(sub_ctx))
 
 @main.command(help="Scaffold a new tent-pole project in the current "
-              "directory: git init, a bootstrap Makefile, a starter "
-              "tent-pole.toml, and hello.md. Safe to re-run -- never "
-              "overwrites a file that's already there.")
+              "directory: git init, a starter tent-pole.toml, and "
+              "hello.md. Safe to re-run -- never overwrites a file "
+              "that's already there.")
 @click.option("--no-git", is_flag=True, help="Don't run git init.")
 def init(no_git):
     if not no_git:
         scaffold.git_init_unless_already_in_repo()
 
-    scaffold.write_if_absent("Makefile", scaffold.makefile_content())
     scaffold.write_if_absent("tent-pole.toml", scaffold.init_template("tent-pole.toml"))
     scaffold.write_if_absent("hello.md", scaffold.init_template("hello.md"))
 

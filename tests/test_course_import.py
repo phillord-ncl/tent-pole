@@ -117,7 +117,11 @@ def test_module_page_written_into_its_own_slugified_subdirectory(tmp_path, monke
     assert "Intro content" in md
 
 
-def test_module_directory_gets_tent_pole_toml_and_makefile(tmp_path, monkeypatch):
+def test_module_directory_gets_tent_pole_toml(tmp_path, monkeypatch):
+    """No Makefile: tent-pole's built-in doit fan-out discovers a
+    module subdirectory by its tent-pole.toml alone (see
+    doit_rules/__init__.py's _fan_out), nothing needs to be scaffolded
+    into it to make that work."""
     page1 = FakePage("intro")
     page2 = FakePage("second")
     items = [
@@ -130,7 +134,7 @@ def test_module_directory_gets_tent_pole_toml_and_makefile(tmp_path, monkeypatch
 
     assert result.exit_code == 0, result.output
     moddir = tmp_path / "out" / "week-1"
-    assert (moddir / "Makefile").exists()
+    assert not (moddir / "Makefile").exists()
 
     parsed = toml.load(moddir / "tent-pole.toml")
     assert parsed["module"]["identifier"] == "Week 1"
@@ -212,7 +216,11 @@ def test_root_tent_pole_toml_records_numeric_course_id(tmp_path, monkeypatch):
     assert parsed["course"]["id"] == "16807"
 
 
-def test_root_makefile_recurses_into_module_subdirectories(tmp_path, monkeypatch):
+def test_root_gets_no_makefile(tmp_path, monkeypatch):
+    """No Makefile at the root either: `tent-pole build` recurses into
+    week-1 on its own via the same built-in glob-discovery fan-out,
+    unconditionally -- there's nothing left for a root Makefile to
+    dispatch that doit doesn't already do by default."""
     page = FakePage("intro")
     items = [FakeModuleItem("Page", page_url="intro", position=1)]
     fake_course = FakeCourse(modules=[FakeModule("Week 1", items)], pages=[page])
@@ -220,9 +228,7 @@ def test_root_makefile_recurses_into_module_subdirectories(tmp_path, monkeypatch
     result = invoke(tmp_path, monkeypatch, fake_course, ["1", "out"])
 
     assert result.exit_code == 0, result.output
-    makefile = (tmp_path / "out" / "Makefile").read_text()
-    assert "week-1" in makefile
-    assert "$(MAKE) -C" in makefile
+    assert not (tmp_path / "out" / "Makefile").exists()
 
 
 def test_git_init_runs_by_default(tmp_path, monkeypatch):

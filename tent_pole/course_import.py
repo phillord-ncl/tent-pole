@@ -9,30 +9,6 @@ from . import scaffold
 
 SLUG_PATTERN = re.compile(r'[^a-z0-9]+')
 
-ROOT_MAKEFILE_TEMPLATE = """\
-TENT_POLE ?= tent-pole
-TENT_POLE_DIR := $(shell $(TENT_POLE) pkg-dir)
-include $(TENT_POLE_DIR)/make-rules/rules.inc
-include $(TENT_POLE_DIR)/make-rules/python/rules.inc
-
-MD_SOURCES = $(filter-out %.quiz.md,$(wildcard *.md))
-QUIZ_SOURCES = $(wildcard *.quiz.md)
-
-include $(MD_SOURCES:%.md=%.tpd)   # auto-generated per-page dependencies
-
-SUBDIRS = {subdirs}
-
-pages: $(MD_SOURCES:%.md=%.tpp)
-\tfor d in $(SUBDIRS); do $(MAKE) -C $$d pages; done
-quizzes: $(QUIZ_SOURCES:%.quiz.md=%.tpq)
-\tfor d in $(SUBDIRS); do $(MAKE) -C $$d quizzes; done
-full: $(MD_SOURCES:%.md=%.full.html)
-\tfor d in $(SUBDIRS); do $(MAKE) -C $$d full; done
-
-.DEFAULT_GOAL := pages
-.PHONY: pages quizzes full $(SUBDIRS)
-"""
-
 
 def __slugify(name):
     return SLUG_PATTERN.sub("-", name.lower()).strip("-") or "module"
@@ -110,8 +86,6 @@ def __write_module(directory, dirname, module, page_items):
     ]
     with open(os.path.join(moddir, "tent-pole.toml"), "w") as fh:
         fh.write(__module_toml(module.name, items))
-    with open(os.path.join(moddir, "Makefile"), "w") as fh:
-        fh.write(scaffold.makefile_content())
     return moddir
 
 
@@ -164,10 +138,6 @@ def run_import(courseidentifier, directory, no_git):
 
     with open(os.path.join(directory, "tent-pole.toml"), "w") as fh:
         fh.write(__course_toml(courseobj.id))
-    with open(os.path.join(directory, "Makefile"), "w") as fh:
-        fh.write(ROOT_MAKEFILE_TEMPLATE.format(
-            subdirs=" ".join(sorted(dirname_by_module.values()))
-        ))
 
     if not no_git:
         cwd = os.getcwd()
