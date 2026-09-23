@@ -37,7 +37,14 @@ def __find_page(course, canvasname):
     Canvas disambiguates a title/slug that's ever been used before in
     the course (even by a page since deleted) with -2, -3, etc, so a
     page's real url can diverge from canvasname indefinitely once
-    that's happened once, and only a title search still finds it."""
+    that's happened once, and only a title search still finds it.
+
+    The title search re-fetches by url once a match is found rather
+    than returning that match directly: Canvas's list-pages endpoint
+    (unlike its single-page one) never populates .body, so a caller
+    that needs the page's actual content -- __compiled_at_drift, in
+    particular -- would crash with a bare AttributeError on a page
+    that only ever needed the title-search path to be found."""
     try:
         return course.get_page(canvasname)
     except canvasapi.exceptions.ResourceDoesNotExist:
@@ -45,7 +52,7 @@ def __find_page(course, canvasname):
     canvastitle = __canvastitle_from_canvasname(canvasname)
     for page in course.get_pages():
         if page.title == canvastitle:
-            return page
+            return course.get_page(page.url)
     return None
 
 def __page_exists(course, canvasname):

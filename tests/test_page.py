@@ -139,6 +139,39 @@ def test_page_by_guess_uses_title_search_when_url_has_a_space(monkeypatch):
     assert page.page_by_guess("Has A Space") is target
 
 
+class _PageSummary:
+    """What Canvas's list-pages endpoint actually returns: no .body
+    attribute at all (unlike a single-page get_page result) -- a plain
+    object rather than FakePage so accessing .body raises AttributeError
+    exactly like the real canvasapi Page would, instead of silently
+    returning None."""
+    def __init__(self, title, url):
+        self.title = title
+        self.url = url
+
+
+def test_find_page_title_fallback_refetches_the_full_page(monkeypatch):
+    """Regression: Canvas disambiguates a title/slug reused since a
+    prior page was deleted with -2, -3, etc, so the real url can diverge
+    from canvasname -- __find_page's title-search fallback used to
+    return the list-endpoint's own summary object directly, which has
+    no .body, crashing any caller (e.g. __compiled_at_drift) that reads
+    the page's actual content."""
+    summary = _PageSummary(title="Programming", url="programming-4")
+    full = FakePage(title="Programming", url="programming-4")
+
+    class FakeCourse:
+        def get_page(self, url):
+            if url == "programming-4":
+                return full
+            raise canvasapi.exceptions.ResourceDoesNotExist("not found")
+
+        def get_pages(self):
+            return [summary]
+
+    assert page.__find_page(FakeCourse(), "programming") is full
+
+
 def test_page_metadata_includes_hash_and_editor(tmp_path):
     local = write_local_file(tmp_path / "test-1.html")
     fake_page = FakePage(last_edited_by={"id": 5272, "display_name": "Phillip Lord"})
