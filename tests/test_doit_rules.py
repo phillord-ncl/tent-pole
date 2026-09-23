@@ -7,7 +7,10 @@ include_deps_filter pandoc-integration tests) since task_html/
 task_full_html/task_tpf call through to it via include_deps_filter.parse.
 """
 
+import os
 import shutil
+import subprocess
+import sys
 
 import pytest
 
@@ -16,6 +19,26 @@ from tent_pole.doit_rules import core
 
 PANDOC = shutil.which("pandoc")
 pytestmark = pytest.mark.skipif(PANDOC is None, reason="pandoc not installed")
+
+
+def test_tent_pole_falls_back_to_sys_argv0():
+    """If TENT_POLE isn't set, task actions must call back into
+    whichever binary actually launched this process (sys.argv[0]), not
+    a hardcoded "tent-pole" -- otherwise e.g. `tent-pole-next build`
+    would silently push through a different installed tent-pole for
+    every internal fan-out/page-push/module-create action. Run in a
+    fresh subprocess since TENT_POLE is frozen at module-import time,
+    which already happened for this test file's own `core` import."""
+    env = dict(os.environ)
+    env.pop("TENT_POLE", None)
+    result = subprocess.run(
+        [sys.executable, "-c",
+         "import sys; sys.argv[0] = '/opt/bin/tent-pole-custom'\n"
+         "from tent_pole.doit_rules import core\n"
+         "print(core.TENT_POLE)"],
+        capture_output=True, text=True, check=True, env=env,
+    )
+    assert result.stdout.strip() == "/opt/bin/tent-pole-custom"
 
 
 def _write(path, content):
@@ -68,8 +91,8 @@ def test_task_page_push_depends_on_html_not_md(course_dir):
     assert task["targets"] == ["foo.tpp"]
     assert task["file_dep"] == ["foo.html"]
     assert task["actions"] == [
-        ["tent-pole", "page", "push", "foo.html"],
-        ["tent-pole", "page", "dump", "foo.html"],
+        [core.TENT_POLE, "page", "push", "foo.html"],
+        [core.TENT_POLE, "page", "dump", "foo.html"],
     ]
 
 
@@ -79,7 +102,7 @@ def test_task_quiz_push_needs_no_separate_dump(course_dir):
     (task,) = list(core.task_quiz_push())
 
     assert task["name"] == "bar.tpq"
-    assert task["actions"] == [["tent-pole", "quiz", "push", "bar.quiz.md"]]
+    assert task["actions"] == [[core.TENT_POLE, "quiz", "push", "bar.quiz.md"]]
 
 
 def test_task_tpf_discovers_embedded_image(course_dir):
@@ -98,7 +121,7 @@ def test_task_tpf_mp4_gets_wait_on_dump(course_dir):
     (task,) = list(core.task_tpf())
 
     dump_action = task["actions"][1]
-    assert dump_action == ["tent-pole", "file", "dump", "--wait", "clip.mp4"]
+    assert dump_action == [core.TENT_POLE, "file", "dump", "--wait", "clip.mp4"]
 
 
 def test_task_tpf_dedupes_a_file_referenced_from_two_pages(course_dir):

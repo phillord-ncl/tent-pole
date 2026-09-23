@@ -21,10 +21,19 @@ this to be correct. See claude-make-replacement.md.
 import glob
 import os
 import subprocess
+import sys
 
 from .. import include_deps_filter
 
-TENT_POLE = os.environ.get("TENT_POLE", "tent-pole")
+## Not a hardcoded "tent-pole": subprocess actions below (fan-out,
+## page/file push, module create/reorder) call back into tent-pole
+## itself, so they must resolve to whichever tent-pole actually
+## launched this process (e.g. a suffixed pipx install like
+## tent-pole-next) rather than to a different tent-pole that happens
+## to be first on PATH. sys.argv[0] is that exact binary -- a bare-name
+## invocation is already resolved to a full path by the shell before
+## Python ever sees it.
+TENT_POLE = os.environ.get("TENT_POLE") or sys.argv[0]
 CANVAS_FILTER = os.environ.get("CANVAS_FILTER", "canvas-filter")
 CODE_INCLUDE_FILTER = os.environ.get("CODE_INCLUDE_FILTER", "code-include-filter")
 

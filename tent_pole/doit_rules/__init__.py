@@ -20,12 +20,15 @@ new name avoids that -- see each function below.
 import glob
 import os
 import subprocess
+import sys
 
 from . import core
 from .core import task_html, task_quiz_full, task_tpf, task_reorder  # noqa: F401
 from .python import task_out, task_crash, task_stout  # noqa: F401
 
-TENT_POLE = os.environ.get("TENT_POLE", "tent-pole")
+## See core.py's own note: resolves to whichever tent-pole launched
+## this process, not a hardcoded name.
+TENT_POLE = os.environ.get("TENT_POLE") or sys.argv[0]
 
 
 def _fan_out(goal):
