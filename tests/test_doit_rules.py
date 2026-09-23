@@ -183,3 +183,43 @@ def test_task_pages_combines_own_pages_and_fan_out(course_dir):
     names = {t["name"] for t in doit_rules.task_pages()}
 
     assert names == {"foo.tpp", "child"}
+
+
+def test_fan_out_recurse_clean_false_by_default_declares_no_clean(course_dir):
+    """Regression: doit's own Clean command only ever deletes a task's
+    declared targets, it never runs a task's actions -- so a fan-out
+    subtask with no "clean" key at all was a silent no-op past the
+    first level, `tent-pole build clean` never reached any child
+    directory. Confirmed live against the CSC1034 integration clone:
+    `tent-pole build clean` at a directory with children did nothing.
+    Default (no recurse_clean) still declares nothing, matching every
+    other fan-out caller (quizzes/full) that shouldn't re-clean the
+    same child once per goal."""
+    (course_dir / "child").mkdir()
+    (course_dir / "child" / "tent-pole.toml").write_text("[module]\n")
+
+    (task,) = list(doit_rules._fan_out("quizzes"))
+
+    assert "clean" not in task
+
+
+def test_fan_out_recurse_clean_true_shells_build_clean_into_child(course_dir):
+    (course_dir / "child").mkdir()
+    (course_dir / "child" / "tent-pole.toml").write_text("[module]\n")
+
+    (task,) = list(doit_rules._fan_out("pages", recurse_clean=True))
+
+    assert task["clean"] == [
+        (doit_rules.run_subprocess,
+         [[doit_rules.TENT_POLE, "build", "clean", "-a"]],
+         {"cwd": "child"}),
+    ]
+
+
+def test_task_pages_fan_out_subtasks_recurse_clean(course_dir):
+    (course_dir / "child").mkdir()
+    (course_dir / "child" / "tent-pole.toml").write_text("[module]\n")
+
+    tasks = {t["name"]: t for t in doit_rules.task_pages()}
+
+    assert "clean" in tasks["child"]

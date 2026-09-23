@@ -45,7 +45,7 @@ def run_subprocess(argv, cwd=None):
     return True
 
 
-def _fan_out(goal):
+def _fan_out(goal, recurse_clean=False):
     """One subtask per immediate child module directory, unconditionally
     dispatching `tent-pole build <goal>` with that directory as cwd --
     same shape as `for d in $(SUBDIRS); do $(MAKE) -C $$d <goal>; done`,
@@ -53,21 +53,40 @@ def _fan_out(goal):
     baked into a generated Makefile string. No file_dep/targets on
     these tasks: doit treats a task with neither as always stale, so
     the dispatch is unconditional for free, same as make's own loop
-    runs every time regardless of whether that child needs anything."""
+    runs every time regardless of whether that child needs anything.
+
+    recurse_clean=True additionally makes `tent-pole build clean`
+    recurse into each child the same way `tent-pole build` itself
+    does, matching the old Makefiles' own unconditional
+    `$(MAKE) -C <dir> clean` -- confirmed live: without this, `clean`
+    at a directory with children was a silent no-op past the first
+    level, since doit's own Clean command only ever deletes a task's
+    own declared targets, never runs its actions, so there was nothing
+    to make it shell into a child directory at all. Passed by just one
+    caller (task_pages) rather than every _fan_out call: `-a` cleans
+    every task regardless of default_tasks, so attaching it to
+    pages/quizzes/full alike would recurse into and re-clean each
+    child once per goal instead of once overall."""
     for child_toml in glob.glob("*/tent-pole.toml"):
         moddir = os.path.dirname(child_toml)
-        yield {
+        task = {
             "name": moddir,
             "actions": [(run_subprocess, [[TENT_POLE, "build", goal]],
                          {"cwd": moddir})],
         }
+        if recurse_clean:
+            task["clean"] = [
+                (run_subprocess, [[TENT_POLE, "build", "clean", "-a"]],
+                 {"cwd": moddir}),
+            ]
+        yield task
 
 
 def task_pages():
     """pages: $(MD_SOURCES:%.md=%.tpp), plus fan-out -- tent-pole
     build's default goal."""
     yield from core.task_page_push()
-    yield from _fan_out("pages")
+    yield from _fan_out("pages", recurse_clean=True)
 
 
 def task_quizzes():
