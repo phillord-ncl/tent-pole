@@ -24,7 +24,7 @@ import sys
 
 from . import core
 from .core import task_html, task_quiz_full, task_tpf, task_reorder  # noqa: F401
-from .python import task_out, task_crash, task_stout  # noqa: F401
+from .python import task_out, task_crash, task_stout, task_test_out  # noqa: F401
 
 ## See core.py's own note: resolves to whichever tent-pole launched
 ## this process, not a hardcoded name.

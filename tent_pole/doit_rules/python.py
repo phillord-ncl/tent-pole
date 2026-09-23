@@ -93,3 +93,20 @@ def task_stout():
             "file_dep": [py],
             "targets": [stout],
         }
+
+
+def task_test_out():
+    """%.test_out: %.py -- run pytest, capture stdout. Unlike .out/
+    .crash/.stout, a page never sets an attribute to ask for this --
+    it's always a plain include= directly on the already-derived
+    .test_out file itself (there's no "test=true" CodeIncludeAttrs
+    flag), but _referenced's own suffix-matching discovery already
+    covers that shape."""
+    for test_out in _referenced("test_out"):
+        py = test_out[: -len(".test_out")] + ".py"
+        yield {
+            "name": test_out,
+            "actions": [(_run, [py, test_out, "test"])],
+            "file_dep": [py],
+            "targets": [test_out],
+        }
