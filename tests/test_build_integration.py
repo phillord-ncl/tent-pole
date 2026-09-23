@@ -84,3 +84,27 @@ def test_single_target_file_selection(sample_course):
     assert (sample_course / "question-groups-quiz.quiz.full.html").exists()
     ## Nothing else got pulled in by naming just this one target.
     assert not (sample_course / "markdown-features-1.full.html").exists()
+
+
+def test_clean_all_removes_every_targets_file(sample_course):
+    """doit's own built-in "clean" subcommand only removes a task's
+    targets if that task explicitly opts in via "clean": True -- every
+    task-creator (core.py, python.py, and this fixture's own dodo.py)
+    needs that key, or `tent-pole build clean --all` silently does
+    nothing at all, the exact failure mode found live against the
+    CSC1034 integration clone."""
+    assert run_build(["full"]) == 0
+    built = (
+        "markdown-features-1.full.html", "markdown-features-2.full.html",
+        "test-image.png", "test-video.mp4",
+        "demo.out", "repl_demo.stout", "crash_demo.crash",
+    )
+    assert all((sample_course / name).exists() for name in built)
+
+    ## doit's own Clean command has no explicit return, unlike Run --
+    ## it comes back None, not 0. sys.exit(None) is still exit code 0
+    ## for a real invocation, so this isn't a real-world problem, just
+    ## not the same contract as run_build's other callers rely on.
+    run_build(["clean", "-a"])
+
+    assert not any((sample_course / name).exists() for name in built)

@@ -56,6 +56,7 @@ def task_html():
             "actions": [["pandoc", "--filter=" + CANVAS_FILTER, md, "-o", html]],
             "file_dep": [md] + html_deps,
             "targets": [html],
+            "clean": True,
         }
 
 
@@ -75,6 +76,7 @@ def task_full_html():
             ]],
             "file_dep": [md] + full_deps,
             "targets": [full],
+            "clean": True,
         }
 
 
@@ -92,6 +94,7 @@ def task_quiz_full():
             ]],
             "file_dep": [qmd],
             "targets": [full],
+            "clean": True,
         }
 
 
@@ -109,6 +112,7 @@ def task_page_push():
             ],
             "file_dep": [html],
             "targets": [tpp],
+            "clean": True,
         }
 
 
@@ -124,6 +128,7 @@ def task_quiz_push():
             "actions": [[TENT_POLE, "quiz", "push", qmd]],
             "file_dep": [qmd],
             "targets": [tpq],
+            "clean": True,
         }
 
 
@@ -154,6 +159,7 @@ def task_tpf():
                 "actions": [[TENT_POLE, "file", "push", raw], dump_action],
                 "file_dep": [raw],
                 "targets": [dep],
+                "clean": True,
             }
 
 
@@ -173,4 +179,5 @@ def task_reorder():
         "actions": [[TENT_POLE, "module", "reorder"], (_dump_module, [])],
         "file_dep": ["tent-pole.toml"],
         "targets": ["tent-pole.toml.tpm"],
+        "clean": True,
     }

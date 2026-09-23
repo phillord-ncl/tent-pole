@@ -18,6 +18,7 @@ def task_test_image():
         "actions": [["python3", "gen_test_image.py"]],
         "file_dep": ["gen_test_image.py"],
         "targets": ["test-image.png"],
+        "clean": True,
     }
 
 
@@ -34,4 +35,5 @@ def task_test_video():
         ]],
         "targets": ["test-video.mp4"],
         "uptodate": [os.path.exists("test-video.mp4")],
+        "clean": True,
     }

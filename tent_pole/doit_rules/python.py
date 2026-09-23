@@ -66,6 +66,7 @@ def task_out():
             "actions": [(_run, [py, out, "stdout"])],
             "file_dep": [py],
             "targets": [out],
+            "clean": True,
         }
 
 
@@ -79,6 +80,7 @@ def task_crash():
             "actions": [(_run, [py, crash, "stderr"])],
             "file_dep": [py],
             "targets": [crash],
+            "clean": True,
         }
 
 
@@ -92,6 +94,7 @@ def task_stout():
             "actions": [(_run, [py, stout, "shell"])],
             "file_dep": [py],
             "targets": [stout],
+            "clean": True,
         }
 
 
@@ -109,4 +112,5 @@ def task_test_out():
             "actions": [(_run, [py, test_out, "test"])],
             "file_dep": [py],
             "targets": [test_out],
+            "clean": True,
         }

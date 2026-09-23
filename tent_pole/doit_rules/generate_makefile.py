@@ -50,6 +50,7 @@ def task_generated():
             "actions": [(_run, [src, target, mode])],
             "file_dep": [src],
             "targets": [target],
+            "clean": True,
         }
 
     for src in glob.glob("*.pys"):
@@ -59,4 +60,5 @@ def task_generated():
             "actions": [(_run, [src, target, "shell"])],
             "file_dep": [src],
             "targets": [target],
+            "clean": True,
         }
