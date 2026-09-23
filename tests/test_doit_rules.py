@@ -166,6 +166,16 @@ def test_fan_out_yields_one_subtask_per_child_with_no_freshness_check(course_dir
         assert "uptodate" not in task
 
 
+def test_run_subprocess_returns_a_doit_compatible_value():
+    """Regression: subprocess.run's own CompletedProcess satisfies none
+    of doit's accepted python-action return types (False/True/None/str/
+    dict), so using it directly as an action callable crashed with
+    "Python Task error" even when the subprocess itself had already
+    succeeded -- found live running a real fan-out for the first time,
+    not caught by shape-only assertions on the yielded task dict."""
+    assert doit_rules.run_subprocess(["true"]) is True
+
+
 def test_task_pages_combines_own_pages_and_fan_out(course_dir):
     _write(course_dir / "foo.md", "hello\n")
     (course_dir / "child").mkdir()

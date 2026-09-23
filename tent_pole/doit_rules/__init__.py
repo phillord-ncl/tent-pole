@@ -31,6 +31,20 @@ from .python import task_out, task_crash, task_stout  # noqa: F401
 TENT_POLE = os.environ.get("TENT_POLE") or sys.argv[0]
 
 
+def run_subprocess(argv, cwd=None):
+    """doit's python-action protocol wants its callable to return
+    False/True/None/a string/a dict, not whatever the callable itself
+    naturally returns -- subprocess.run's own CompletedProcess
+    satisfies none of those, so every subprocess-dispatch action here
+    and in any course-level dodo.py (fan-out, module create, etc)
+    needs this thin translation rather than using subprocess.run
+    directly as the action callable. check=True already turns a
+    non-zero exit into an exception doit reports as a failure; True
+    here is only ever reached on success."""
+    subprocess.run(argv, cwd=cwd, check=True)
+    return True
+
+
 def _fan_out(goal):
     """One subtask per immediate child module directory, unconditionally
     dispatching `tent-pole build <goal>` with that directory as cwd --
@@ -44,8 +58,8 @@ def _fan_out(goal):
         moddir = os.path.dirname(child_toml)
         yield {
             "name": moddir,
-            "actions": [(subprocess.run, [[TENT_POLE, "build", goal]],
-                         {"cwd": moddir, "check": True})],
+            "actions": [(run_subprocess, [[TENT_POLE, "build", goal]],
+                         {"cwd": moddir})],
         }
 
 
