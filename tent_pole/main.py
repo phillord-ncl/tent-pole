@@ -46,6 +46,23 @@ def main(course, beta):
 def pkg_dir():
     print(os.path.dirname(__file__))
 
+@main.command(name="help", help="Show tent-pole's own help, or a "
+              "specific command's (e.g. `tent-pole help page`) -- "
+              "same idea as `git help`, since `tent-pole help` reads "
+              "more naturally than remembering --help has to go after "
+              "the group name, not the top-level command.")
+@click.argument("command_name", required=False)
+@click.pass_context
+def help_command(ctx, command_name):
+    if command_name is None:
+        click.echo(ctx.parent.get_help())
+        return
+    command = ctx.parent.command.get_command(ctx.parent, command_name)
+    if command is None:
+        raise click.ClickException("No such command {!r}.".format(command_name))
+    with click.Context(command, info_name=command_name, parent=ctx.parent) as sub_ctx:
+        click.echo(command.get_help(sub_ctx))
+
 @main.command(help="Scaffold a new tent-pole project in the current "
               "directory: git init, a bootstrap Makefile, a starter "
               "tent-pole.toml, and hello.md. Safe to re-run -- never "

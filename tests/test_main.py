@@ -39,6 +39,29 @@ def test_pkg_dir_prints_the_installed_package_directory():
     assert result.output.strip() == os.path.dirname(tp_main.__file__)
 
 
+def test_bare_help_matches_top_level_help():
+    """`tent-pole help` (no argument) is the same idea as `git help` --
+    reads more naturally than remembering --help goes after the group
+    name, not the top-level command."""
+    bare = CliRunner().invoke(main, ["help"])
+    dashdash = CliRunner().invoke(main, ["--help"])
+    assert bare.exit_code == 0, bare.output
+    assert bare.output == dashdash.output
+
+
+def test_help_with_command_name_matches_that_commands_help():
+    named = CliRunner().invoke(main, ["help", "page"])
+    dashdash = CliRunner().invoke(main, ["page", "--help"])
+    assert named.exit_code == 0, named.output
+    assert named.output == dashdash.output
+
+
+def test_help_with_unknown_command_name_fails_cleanly():
+    result = CliRunner().invoke(main, ["help", "not-a-real-command"])
+    assert result.exit_code != 0
+    assert "No such command 'not-a-real-command'" in result.output
+
+
 class FakeResponse:
     def __init__(self, text):
         self.text = text
