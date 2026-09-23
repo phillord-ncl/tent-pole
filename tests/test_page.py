@@ -381,3 +381,42 @@ def test_push_records_local_state_as_part_of_the_same_call(tmp_path, monkeypatch
     recorded = toml.load(tppfile)
     assert recorded["page_id"] == fake_page.page_id
     assert recorded["hash"] == page.manifest.hash_file(local)
+
+
+class FakeCourseGone:
+    """Neither lookup finds anything -- simulates a page that used to
+    exist (there's a local .tpp for it) but has since been deleted
+    from Canvas independently of tent-pole."""
+    def __init__(self, created_page):
+        self._created_page = created_page
+
+    def get_page(self, canvasname):
+        raise canvasapi.exceptions.ResourceDoesNotExist("not found")
+
+    def get_pages(self):
+        return []
+
+    def create_page(self, wiki_page):
+        return self._created_page
+
+
+def test_push_recreates_a_page_deleted_independently_of_tent_pole(tmp_path, monkeypatch):
+    """Regression: a page removed from Canvas independently of
+    tent-pole (confirmed live during an integration-test course
+    reset) used to crash push with "No page found -- run push first"
+    -- raised from inside its own optional drift pre-check via
+    __resolve_page -- even though a plain push is exactly the right
+    thing to do here: there is nothing live left to protect against
+    overwriting, so it should just recreate the page."""
+    monkeypatch.chdir(tmp_path)
+    write_local_file(tmp_path / "foo.html")
+    (tmp_path / "foo.tpp").write_text(
+        'hash = "stale"\ncompiled_at = "2026-01-01T00:00:00+00:00"\n'
+    )
+    created = FakePage(page_id=99, url="foo", title="Foo")
+    monkeypatch.setattr(page.course, "course_obj", lambda: FakeCourseGone(created))
+
+    result = CliRunner().invoke(page.page, ["push", "foo.html"], catch_exceptions=False)
+
+    assert result.exit_code == 0, result.output
+    assert "Pushed" in result.output

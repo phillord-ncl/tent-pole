@@ -225,9 +225,20 @@ def __compiled_at_drift(pageobj, recorded):
 def __remote_drift(filename, recorded):
     """Returns a list (possibly empty) rather than a single optional
     problem, so an editor change and a compiled-at mismatch occurring
-    together are both reported, not just whichever is checked first."""
+    together are both reported, not just whichever is checked first.
+
+    Uses __find_page rather than __resolve_page: a page that no longer
+    exists at all (deleted independently of tent-pole -- confirmed
+    live during an integration-test course reset) is reported as its
+    own drift problem here rather than raising, so a caller like
+    `verify` still learns about it instead of crashing outright. push
+    needs the raise-free __find_page result itself, checked before
+    ever calling this, to decide whether there is anything live left
+    to protect against overwriting at all."""
     canvasname = canvasname_from_path(filename)
-    pageobj = __resolve_page(course.course_obj(), canvasname)
+    pageobj = __find_page(course.course_obj(), canvasname)
+    if pageobj is None:
+        return ["page no longer exists on Canvas"]
 
     return [
         p for p in (
@@ -289,11 +300,18 @@ def push(filename, force):
     courseobj = course.course_obj()
     canvasname = canvasname_from_path(filename)
 
-    ## Only a page pushed before has a baseline to drift from -- a
-    ## first-ever push has nothing to compare against (and __load_tpp
-    ## would itself raise "run push first", which would make pushing
-    ## for the first time impossible).
-    if not force and os.path.exists(__tpp_path(filename)):
+    ## Only a page pushed before, that still actually exists, has a
+    ## baseline worth drift-checking -- a first-ever push has nothing
+    ## to compare against, and a page deleted independently of
+    ## tent-pole (confirmed live during an integration-test course
+    ## reset) has nothing live left to protect against overwriting, so
+    ## just recreate it below rather than crashing on "no page found"
+    ## from inside what should be an optional safety check.
+    if (
+        not force
+        and os.path.exists(__tpp_path(filename))
+        and __find_page(courseobj, canvasname) is not None
+    ):
         problems = __remote_drift(filename, __load_tpp(filename))
         if problems:
             raise click.ClickException(
