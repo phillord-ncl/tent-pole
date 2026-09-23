@@ -15,11 +15,9 @@ are all still open -- see `next_steps.md`.
 
 ## File recognition
 
-The `.quiz.md` extension. A leaf Makefile's own `QUIZ_SOURCES =
-$(wildcard *.quiz.md)` needs to stay separate from `MD_SOURCES` --
-`.quiz.md` is still `*.md` as far as a shell glob is concerned, so
-`MD_SOURCES` should filter it out (`$(filter-out %.quiz.md,$(wildcard
-*.md))`) if the two share a directory.
+The `.quiz.md` extension. `tent-pole build` tells a quiz apart from an
+ordinary page by it automatically -- a directory can freely mix `.md`
+and `.quiz.md` files, nothing to configure either way.
 
 ## Front matter
 
@@ -94,9 +92,9 @@ a diff. Refuses to push over a published quiz, or one with any
 submissions, without `--force` (that would destroy submission-linked
 data).
 
-`rules.inc` provides `%.tpq: %.quiz.md` (push) and `%.quiz.full.html:
-%.quiz.md` (a local, no-Canvas-access preview, the same idea as a
-page's `%.full.html`).
+`tent-pole build` provides both `<name>.tpq` (push, via
+`tent-pole build <name>`) and `tent-pole build quiz_full` (a local,
+no-Canvas-access preview, the same idea as a page's `full`).
 
 ## Linking
 

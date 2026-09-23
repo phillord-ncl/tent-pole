@@ -1,7 +1,7 @@
 # Start a new project
 
 A tent-pole project is a directory of markdown files plus a
-`tent-pole.toml`, built with GNU Make and pushed to Canvas.
+`tent-pole.toml`, built with `tent-pole build` and pushed to Canvas.
 
 You should ensure your API key is [configured](configure.md) first
 before you run this.
@@ -13,9 +13,11 @@ mkdir my-course && cd my-course
 tent-pole init
 ```
 
-This creates a `Makefile`, `tent-pole.toml`, and a starter `hello.md`, and
-runs `git init` -- content under version control is one of the main
-points of tent-pole.
+This creates a `tent-pole.toml` and a starter `hello.md`, and runs
+`git init` -- content under version control is one of the main points
+of tent-pole. No build file is scaffolded: `tent-pole build` already
+knows how to build a plain directory of markdown pages on its own,
+with nothing local to configure.
 
 ## 2. Configure the course and module
 
@@ -37,20 +39,26 @@ items = [
 
 ## 3. Build and push
 
-To run the build and push the pages to Canvas, we use two make commands.
+To run the build and push the pages to Canvas, we use two `tent-pole
+build` commands.
 
 ```
-make pages
-make reorder
+tent-pole build
+tent-pole build reorder
 ```
 
-`make pages` builds `hello.md` into HTML which is then pushed to
-Canvas. See [write a page](write-a-page.md) for what the markdown can
-contain. `make reorder` creates the module if needed, and
-[organises](organise-a-module.md) the pages with in it.
+`tent-pole build` (its default goal, `pages`) builds `hello.md` into
+HTML which is then pushed to Canvas. See [write a page](write-a-page.md)
+for what the markdown can contain. `tent-pole build reorder` creates
+the module if needed, and [organises](organise-a-module.md) the pages
+within it.
 
-The generated `Makefile` contains specific support for `tent-pole` but
-is otherwise normal. You can add whatever else you course needs to it.
+A project needing rules beyond the built-in ones (a second markup
+language's own compile step, say) adds its own `dodo.py` doing `from
+tent_pole.doit_rules import *` to keep everything above, then defines
+its own extra tasks alongside -- see
+[include-code.md](include-code.md) for CSC1034's own pandoc rules as
+a worked example.
 
 ## `init` options
 

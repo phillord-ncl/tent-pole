@@ -1,5 +1,30 @@
 # Releases
 
+## Unreleased
+
+- Added `tent-pole build`, a [doit](https://pydoit.org/)-based
+  replacement for the old make-based rules: builds a plain directory
+  of markdown pages with no configuration at all, recurses into child
+  module directories on its own, and a course needing extra rules adds
+  a `dodo.py` doing `from tent_pole.doit_rules import *` to extend it.
+  A bare source-file stem resolves to its build target automatically
+  (`tent-pole build hello` for `hello.md`). See
+  [docs/new-project.md](new-project.md).
+- Added `tent-pole build clean [-a]`, recursing into child module
+  directories the same way `build` itself does.
+- Added `tent-pole build reorder`, the same as `module reorder` but
+  reachable as part of a build.
+- Added `tent-pole help [command]`, the same idea as `git help`.
+- `tent-pole init`/`import` no longer scaffold a `Makefile` -- `build`
+  needs no local build file at all for the common case.
+- Fixed: `page push` now records its own local push-tracking state as
+  part of the same push, instead of leaving it to a separate `dump`
+  step -- a failure between the two used to leave a successful push
+  permanently unrecorded, so every retry re-tripped the drift guard
+  against tent-pole's own prior push.
+- Fixed: `page push` recreates a page that's been deleted independently
+  of tent-pole instead of crashing with "no page found".
+
 ## 0.5.0
 
 - Added `tent-pole import <course> [directory]` -- pulls an existing

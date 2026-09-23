@@ -8,7 +8,8 @@ This is a **lossy, best-effort** reverse-engineering, not an exact
 copy: reconstructed markdown needs a read-through and a tidy-up
 afterwards, and some content types can't be reconstructed at all (see
 "What isn't imported" below). It's strictly read-only against
-Canvas -- nothing is pushed back until you run `make pages` yourself.
+Canvas -- nothing is pushed back until you run `tent-pole build`
+yourself.
 
 ## 1. Import
 
@@ -59,11 +60,11 @@ Once you're happy with the markdown, treat it like any other tent-pole
 project:
 
 ```
-make pages
-make reorder
+tent-pole build
+tent-pole build reorder
 ```
 
-The first `make pages` after an import is a genuine first push --
+The first `tent-pole build` after an import is a genuine first push --
 `import` doesn't pre-record any "this is already up to date" state,
 even though the content originally came from Canvas.
 

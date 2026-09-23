@@ -10,14 +10,17 @@ syncing files between the local machine and canvas.
 
 Tent-pole works in concert with an existing command line environment,
 meaning that it can be adapted to generate canvas pages from any kind
-of source, including live code that can be run to generate output
-through the use of GNU Make. HTML generation is done by pandoc, with
-tent-pole supplied filters to support code inclusion. The organisation
-of pages into canvas modules uses TOML configuration.
+of source, including live code that can be run to generate output.
+`tent-pole build` (built on [doit](https://pydoit.org/)) drives this:
+it knows how to build a plain directory of markdown pages with no
+configuration at all, and a course needing extra rules of its own
+(a second markup language's own compile step, say) adds a `dodo.py`
+alongside its content to extend it. HTML generation is done by pandoc,
+with tent-pole supplied filters to support code inclusion. The
+organisation of pages into canvas modules uses TOML configuration.
 
 Requirements: Python >= 3.14.
 Optional: Pandoc, if using the filters.
-Optional: GNU Make for building complete courses.
 
 
 Installation
@@ -83,6 +86,45 @@ Command Reference
 
 Tent-pole uses a subcommand structure: `tent-pole <group> <command>
 [args]`.
+
+### build
+
+- `build` -- build this directory (and its own child module
+  directories) with doit, tent-pole's make replacement. Everything
+  after `build` is passed straight through to doit itself -- a task
+  name (`reorder`, `clean`, `full`, `quizzes`), a target file path
+  (`introduction.tpp`), or just a source file's own stem
+  (`introduction`, resolved to `introduction.tpp`/`.tpq`/`.out`/
+  `.crash`/`.stout`/`.tpf` as appropriate), plus any of doit's own
+  flags (`-n <N>` for parallelism, `list`, ...). With nothing given,
+  doit's own default goal (`pages`) runs.
+- `build clean [-a]` -- remove everything `build` produced, recursing
+  into child module directories the same way `build` itself does.
+- `build reorder` -- bring the configured module's item list in line
+  with `tent-pole.toml`, same as `module reorder` below but reachable
+  as part of the same build invocation.
+
+A module directory needs no local build file at all for any of this
+-- `tent-pole init`/`import` don't scaffold one. A course needing
+extra rules of its own adds a `dodo.py` doing `from
+tent_pole.doit_rules import *` to keep everything above, then defines
+its own extra tasks alongside -- see
+[docs/include-code.md](docs/include-code.md) for a worked example.
+
+### help
+
+- `help [command]` -- same idea as `git help`: bare `tent-pole help`
+  is `tent-pole --help`; `tent-pole help page` is `tent-pole page
+  --help`.
+
+### init / import
+
+- `init [--no-git]` -- scaffold a new project in the current
+  directory: `tent-pole.toml`, a starter `hello.md`, and `git init`.
+  See [docs/new-project.md](docs/new-project.md).
+- `import <course> [directory] [--no-git]` -- pull an existing Canvas
+  course down into a new tent-pole project, best-effort. See
+  [docs/import-a-course.md](docs/import-a-course.md).
 
 ### config
 

@@ -1,5 +1,26 @@
 # Migration
 
+## Unreleased
+
+`tent-pole build` (doit-based) is additive, not a forced migration --
+a course repo's existing Makefile and `make-rules/`/`make-inc`-style
+includes keep working exactly as before, and `tent-pole build` isn't
+involved at all unless you actually run it. Moving a leaf module
+directory over is optional and, for the common case (a plain directory
+of markdown pages, no directory-specific rules), needs nothing beyond
+deleting its Makefile: `tent-pole build`'s own built-in rules already
+cover it, and it already discovers a child module directory by its
+`tent-pole.toml` alone, recursing into it unconditionally the same way
+`$(MAKE) -C <dir>` did.
+
+A directory with its own extra rules (a second markup language's own
+compile step, house-style pandoc templates, and the like -- CSC1034's
+lecture-slide pipeline is a real example) needs a `dodo.py` doing
+`from tent_pole.doit_rules import *` to keep the built-in behaviour,
+then defines its own extra `task_*` functions alongside, replacing
+whatever the directory's own Makefile fragment added on top of
+`include $(TENT_POLE_DIR)/make-rules/rules.inc`.
+
 ## 0.4.0
 
 Steps for a repo that already adopted `tent-pole init --tent-pole-dev`'s

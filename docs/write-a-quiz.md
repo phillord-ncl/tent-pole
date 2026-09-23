@@ -45,12 +45,15 @@ Canvas needed. Fix anything that looks wrong here first.
 ## 3. Push it
 
 ```
-tent-pole quiz push week-1.quiz.md
+tent-pole build week-1
 ```
 
-creates or updates the quiz. **Every push deletes and recreates every
-question and group** -- nothing in the markdown gives a question a
-stable identity across edits, so this is a full replace, not a diff.
+resolves the bare stem to `week-1.tpq` and runs `tent-pole quiz push
+week-1.quiz.md` for you -- or run that directly if you'd rather.
+Either way, this creates or updates the quiz. **Every push deletes and
+recreates every question and group** -- nothing in the markdown gives
+a question a stable identity across edits, so this is a full replace,
+not a diff.
 Tent-pole refuses to push over a quiz that's published or has any
 submissions, unless you pass `--force` (which would destroy
 submission-linked data) -- deliberately, since accidentally clobbering
@@ -106,7 +109,7 @@ way a page is referenced -- see
 ## 7. Preview without Canvas
 
 ```
-make quiz-full   # or: pandoc --self-contained --filter=code-include-filter week-1.quiz.md -o week-1.quiz.full.html
+tent-pole build quiz_full   # or: pandoc --self-contained --filter=code-include-filter week-1.quiz.md -o week-1.quiz.full.html
 ```
 
 builds a standalone HTML file to eyeball in a browser -- the same idea

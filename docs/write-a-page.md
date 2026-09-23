@@ -8,22 +8,29 @@ through Pandoc. Assumes a project already set up as in
 
 ```
 echo '# Hello, world' > hello.md
+tent-pole build hello
+```
+
+`tent-pole build hello` resolves the bare stem to `hello.tpp` and runs
+pandoc through `canvas-filter`, `page push`, and `page dump` for you --
+much simpler than typing out that sequence by hand. `tent-pole build`
+with no argument does the same for every page in the directory.
+
+Under the hood, that one command is exactly this:
+
+```
 pandoc --filter=canvas-filter hello.md > hello.html
 tent-pole page push hello.html
 tent-pole page dump hello.html
-```
-
-or, with the Makefile from [start a new project](new-project.md):
-
-```
-make pages
 ```
 
 The Canvas page name comes from the file name: `page-1.md` ->
 `page-1` (underscores become hyphens). `page dump` records the page's
 current remote state next to the file, as `hello.tpp` -- do this after
 every push, since later commands (`check`, `verify`, links between
-pages) read it back.
+pages) read it back. `tent-pole build` always does this for you; only
+reach for the pieces individually when you need finer control than a
+single build step gives you.
 
 ## Everyday commands
 
@@ -72,11 +79,11 @@ An image becomes an inline `<img>`; a `.mp4` link becomes an embedded
 media player instead of a download link. Video uploads need
 `tent-pole file dump --wait` instead of a plain `dump` -- Canvas
 returns a placeholder id until transcoding finishes, and the embed
-needs the real one. With the Makefile from
+needs the real one. With `tent-pole build` from
 [start a new project](new-project.md), this all happens automatically:
-every image/file/link a page actually references becomes a real Make
-prerequisite of its `.html`, via a generated `.tpd` dependency file --
-no separate `file push` step to remember.
+every image/file/link a page actually references is discovered
+straight from its markdown and pushed as its own build step ahead of
+the page itself -- no separate `file push` step to remember.
 
 ## Including a script's source and output
 
@@ -88,7 +95,7 @@ attributes and what they render.
 ## Standalone preview, no Canvas access
 
 ```
-make full
+tent-pole build full
 ```
 
 builds `<file>.full.html` via `code-include-filter` instead of

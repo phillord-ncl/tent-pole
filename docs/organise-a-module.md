@@ -24,9 +24,8 @@ live item list in line with `items`: adding what's missing, editing
 position/indent in place for anything already there (rather than
 deleting and recreating it, which would reset student completion
 state), and removing anything no longer listed. Safe to run
-repeatedly -- with the Makefile from
-[start a new project](new-project.md), `make reorder` does the same
-thing.
+repeatedly -- with [start a new project](new-project.md)'s
+`tent-pole build`, `tent-pole build reorder` does the same thing.
 
 ## Item types
 
