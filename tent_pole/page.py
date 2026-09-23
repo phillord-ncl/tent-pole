@@ -158,6 +158,10 @@ def __page_metadata(filename, pageobj):
         },
     }
 
+def __record_push(filename, pageobj):
+    with open(__tpp_path(filename), "w") as fh:
+        toml.dump(__page_metadata(filename, pageobj), fh)
+
 def __load_tpp(filename):
     tppfile = __tpp_path(filename)
     if not os.path.exists(tppfile):
@@ -238,8 +242,7 @@ def __remote_drift(filename, recorded):
 def dump(filename):
     canvasname = canvasname_from_path(filename)
     pageobj = __resolve_page(course.course_obj(), canvasname)
-    with open(__tpp_path(filename), "w") as fh:
-        toml.dump(__page_metadata(filename, pageobj), fh)
+    __record_push(filename, pageobj)
 
 @page.command(help="Check whether the local file has changed since it was "
                     "last pushed. Local only, no network access.")
@@ -303,6 +306,16 @@ def push(filename, force):
             "body": body
         }
     )
+    ## Recorded immediately, not left to a separate `dump` step: a
+    ## transient failure between the two (e.g. Canvas returning a
+    ## flaky 502 while the edit itself still went through, or the
+    ## build's own recursive fan-out aborting for an unrelated page in
+    ## between) would otherwise leave the live push permanently
+    ## unrecorded, so every retry re-trips __compiled_at_drift against
+    ## tent-pole's own prior successful push -- confirmed live against
+    ## the CSC1034 integration sandbox, see quiz.py's push/__dump_tpq
+    ## for the same pattern already in place there.
+    __record_push(filename, page)
     print("Pushed:{} as {}".format(filename, page.url))
     if page.url != canvasname:
         print("  {!r} was already taken, landed on {!r} instead".format(

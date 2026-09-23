@@ -1,4 +1,6 @@
 import canvasapi.exceptions
+import toml
+from click.testing import CliRunner
 
 from tent_pole import config, page
 
@@ -46,6 +48,9 @@ class FakePage:
         self.updated_at = updated_at
         self.last_edited_by = last_edited_by
         self.body = body
+
+    def edit(self, wiki_page):
+        self.body = wiki_page["body"]
 
 
 class FakeCourseForPage:
@@ -350,3 +355,29 @@ def test_remote_drift_reports_both_editor_and_compiled_at_problems(tmp_path, mon
 
     problems = page.__remote_drift(local, recorded)
     assert len(problems) == 2
+
+
+def test_push_records_local_state_as_part_of_the_same_call(tmp_path, monkeypatch):
+    """Regression: push used to leave writing the .tpp record to a
+    separate `dump` step (task_page_push ran them as two actions).
+    Confirmed live against the CSC1034 integration sandbox: a failure
+    between the two (Canvas returning a flaky error while the edit
+    itself still went through, or the build's own recursive fan-out
+    aborting for an unrelated page in between) left a successful push
+    permanently unrecorded, so every retry re-tripped
+    __compiled_at_drift against tent-pole's own prior push. push must
+    write its own record in the same call as the edit, the same as
+    quiz.py's push/__dump_tpq already does."""
+    monkeypatch.chdir(tmp_path)
+    local = write_local_file(tmp_path / "foo.html")
+    fake_page = FakePage(url="foo", title="Foo")
+    monkeypatch.setattr(page.course, "course_obj", lambda: FakeCourseForPage(fake_page))
+
+    result = CliRunner().invoke(page.page, ["push", "foo.html"], catch_exceptions=False)
+
+    assert result.exit_code == 0, result.output
+    tppfile = tmp_path / "foo.tpp"
+    assert tppfile.exists()
+    recorded = toml.load(tppfile)
+    assert recorded["page_id"] == fake_page.page_id
+    assert recorded["hash"] == page.manifest.hash_file(local)

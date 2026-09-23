@@ -99,8 +99,11 @@ def task_quiz_full():
 
 
 def task_page_push():
-    """%.tpp: %.html -- page push + dump. Not exposed as a top-level
-    "pages" goal itself -- see doit_rules/__init__.py's task_pages."""
+    """%.tpp: %.html -- page push (which now records its own local
+    push-tracking state as part of the same push, same as quiz push
+    already does -- see page.py's push/__record_push). Not exposed as
+    a top-level "pages" goal itself -- see doit_rules/__init__.py's
+    task_pages."""
     for md in _md_sources():
         html = md[:-3] + ".html"
         tpp = md[:-3] + ".tpp"
@@ -108,7 +111,6 @@ def task_page_push():
             "name": tpp,
             "actions": [
                 [TENT_POLE, "page", "push", html],
-                [TENT_POLE, "page", "dump", html],
             ],
             "file_dep": [html],
             "targets": [tpp],

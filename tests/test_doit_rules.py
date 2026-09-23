@@ -92,7 +92,6 @@ def test_task_page_push_depends_on_html_not_md(course_dir):
     assert task["file_dep"] == ["foo.html"]
     assert task["actions"] == [
         [core.TENT_POLE, "page", "push", "foo.html"],
-        [core.TENT_POLE, "page", "dump", "foo.html"],
     ]
 
 
