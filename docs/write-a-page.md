@@ -60,8 +60,24 @@ recreated page can end up at a different url than you'd expect).
 
 ## Embedding an image, file, or video
 
-Push the file first, so `canvas-filter` has somewhere to point the
-link/embed:
+```markdown
+![Alt text](test-image.png "Title")
+
+[a-video.mp4](a-video.mp4)
+```
+
+```
+tent-pole build page
+```
+
+is all you need: every image/file/link a page actually references is
+discovered straight from its markdown and pushed as its own build step
+ahead of the page itself -- no separate `file push` step to remember,
+and a `.mp4` automatically gets `file dump --wait` instead of a plain
+`dump` (Canvas returns a placeholder id until transcoding finishes,
+and the embed needs the real one).
+
+Under the hood, that's:
 
 ```
 tent-pole file push test-image.png
@@ -69,21 +85,11 @@ tent-pole file dump test-image.png
 pandoc --filter=canvas-filter page.md > page.html
 ```
 
-```markdown
-![Alt text](test-image.png "Title")
-
-[a-video.mp4](a-video.mp4)
-```
-
 An image becomes an inline `<img>`; a `.mp4` link becomes an embedded
-media player instead of a download link. Video uploads need
-`tent-pole file dump --wait` instead of a plain `dump` -- Canvas
-returns a placeholder id until transcoding finishes, and the embed
-needs the real one. With `tent-pole build` from
-[start a new project](new-project.md), this all happens automatically:
-every image/file/link a page actually references is discovered
-straight from its markdown and pushed as its own build step ahead of
-the page itself -- no separate `file push` step to remember.
+media player instead of a download link. Only reach for the pieces
+individually when you need finer control than a single build step
+gives you -- see [The basics](#the-basics) above for the same idea
+applied to a plain page push.
 
 ## Including a script's source and output
 

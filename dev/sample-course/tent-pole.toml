@@ -1,3 +1,9 @@
+## Always targets [dev] test_course_id/test_api_url/test_api_key
+## below, regardless of invocation (make, tent-pole build, or a raw
+## tent-pole command) -- this is a throwaway test fixture, never meant
+## to touch a real course.
+beta = true
+
 ## Normally we would configure the course_id here like so:
 
 # [general]

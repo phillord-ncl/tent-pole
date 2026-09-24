@@ -1,7 +1,9 @@
 # Install tent-pole
 
-Requirements: Python >= 3.14. Optional: Pandoc, for the filters; GNU
-Make, for building a whole course.
+Requirements: Python >= 3.14. Optional: Pandoc, for the filters.
+`tent-pole build` (for building a whole course) needs nothing extra --
+it's built on [doit](https://pydoit.org/), a regular Python
+dependency installed alongside tent-pole itself.
 
 
 ## Via pipx, without a local checkout
@@ -39,12 +41,12 @@ running tent-pole's own test suite.
 
 ## On Windows
 
-Python, GNU Make, and Pandoc are not preinstalled. `winget` covers all
-three:
+Python and Pandoc are not preinstalled. `winget` covers both -- no
+separate GNU Make install needed, unlike before `tent-pole build`
+existed:
 
 ```
 winget install --id Python.Python.3.14
-winget install --id GnuWin32.Make
 winget install --id JohnMacFarlane.Pandoc
 ```
 

@@ -14,8 +14,8 @@ the quiz markdown dialect itself.
 ## Setup
 
 Nothing in this directory is target- or credential-specific -- no course,
-no API key, no URL. The Makefile sets `TENT_POLE_USE_TEST_CONFIG=1`,
-which makes every `tent-pole`/`canvas-filter` invocation here read
+no API key, no URL. `beta = true` in this directory's `tent-pole.toml`
+makes every `tent-pole`/`canvas-filter` invocation here read
 `[dev] test_course_id` / `test_api_url` / `test_api_key` from your own
 global config instead of `[general]`/`[course]`. If those aren't already
 set, add them to `~/.config/tent-pole/tent-pole.toml`:

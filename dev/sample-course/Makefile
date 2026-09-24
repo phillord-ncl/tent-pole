@@ -6,9 +6,10 @@
 ### -- no Canvas API access needed, just opens in a browser. See
 ### README.md for setup.
 
-## As this is a sample file, use the test configuration options, which
-## will usually mean the beta website.
-export TENT_POLE_USE_TEST_CONFIG=1
+## The test configuration options (usually the beta website) come from
+## `beta = true` in this directory's own tent-pole.toml -- read
+## directly by every tent-pole invocation, so it applies here too
+## without needing its own env var.
 
 ## We need access the tent-pole executable. We assume this is directly
 ## through the system path for an installed tent-pole. During
