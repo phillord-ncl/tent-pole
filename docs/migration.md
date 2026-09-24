@@ -1,6 +1,6 @@
 # Migration
 
-## Unreleased
+## 0.6.0
 
 `tent-pole build` (doit-based) is additive, not a forced migration --
 a course repo's existing Makefile and `make-rules/`/`make-inc`-style

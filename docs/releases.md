@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## 0.6.0
 
 - Added `tent-pole build`, a [doit](https://pydoit.org/)-based
   replacement for the old make-based rules: builds a plain directory
