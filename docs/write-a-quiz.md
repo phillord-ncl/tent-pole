@@ -3,9 +3,8 @@
 A `.quiz.md` file authors a Canvas quiz the same way an ordinary `.md`
 file authors a page -- front matter, headers, checkbox lists, code
 blocks -- rather than a separate quiz-specific syntax. This walks
-through building one up from nothing; see
-[docs/quiz-markdown.md](quiz-markdown.md) for the full field-by-field
-reference once the shape is familiar.
+through building one up from nothing; see "Field reference" below for
+the exact names once the shape is familiar.
 
 ## 1. Front matter and one question
 
@@ -114,6 +113,29 @@ tent-pole build quiz_full   # or: pandoc --self-contained --filter=code-include-
 
 builds a standalone HTML file to eyeball in a browser -- the same idea
 as a page's own local preview.
+
+## Field reference
+
+- `type="..."` on a question header, via alias: `essay` ->
+  `essay_question`, and so on.
+- Inferred answer type: exactly one `[x]` -> `multiple_choice_question`;
+  more than one -> `multiple_answers_question`.
+- `pick="N"` on a group -> `pick_count`; `points="N"` -> `question_points`.
+- `points_possible` in front matter is dropped if present, with a
+  warning -- Canvas computes it from questions/groups.
+- `hide_crash=` on a code block -- suppresses the rendered "Crashes:"
+  section. `crash=` alone still builds the `.crash` artifact.
+- A `[module] items` entry references a quiz by its `.quiz.md`
+  filename (`{type="Quiz", id="some-quiz.quiz.md"}`), resolved via the
+  quiz's own `.tpq`.
+- A markdown link to a `.quiz.md` file resolves to the quiz's real
+  Canvas url once it has been pushed.
+
+## Still open
+
+Real per-question/group identity, drift detection, and a
+`tent-pole.toml`-driven `[quizzes]` config section (replacing the
+`.quiz.md` extension-sniffing convention).
 
 ## Not supported yet
 

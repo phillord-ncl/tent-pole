@@ -74,8 +74,6 @@ Task-oriented howtos, in `docs/`:
 
 Reference material:
 
-- [docs/quiz-markdown.md](docs/quiz-markdown.md) -- the `.quiz.md`
-  dialect, field by field.
 - [docs/migration.md](docs/migration.md) -- bringing an existing
   course repo's Makefile up to date with the current shared rules.
 - [docs/releases.md](docs/releases.md) -- changelog.
@@ -202,8 +200,7 @@ embedding a pushed file/image/video into a page.
 - `push --dry-run <file>` -- parse and print the structure, no network
   access
 
-See [docs/write-a-quiz.md](docs/write-a-quiz.md) and
-[docs/quiz-markdown.md](docs/quiz-markdown.md).
+See [docs/write-a-quiz.md](docs/write-a-quiz.md).
 
 
 Pandoc Filters
