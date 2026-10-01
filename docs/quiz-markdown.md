@@ -11,7 +11,7 @@ Reference material, not a tutorial -- see [write a quiz](write-a-quiz.md)
 for a walkthrough. Preliminary: real per-question/group identity,
 drift detection, and a `tent-pole.toml`-driven `[quizzes]` config
 section (replacing the `.quiz.md` extension-sniffing convention below)
-are all still open -- see `claude_notes.md`.
+are all still open.
 
 ## File recognition
 
