@@ -1,0 +1,12 @@
+## Always targets [dev] test_course_id/test_api_url/test_api_key
+## below, regardless of invocation -- this is a throwaway test
+## fixture, never meant to touch a real course. See
+## ../sample-course-python/README.md for the global config this
+## expects.
+beta = true
+
+[module]
+identifier = "R Code Include Test"
+items = [
+  {id="r-demo"},
+]
