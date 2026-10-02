@@ -1,0 +1,128 @@
+#!/usr/bin/env Rscript
+
+## Runs one .R source file through evaluate::evaluate() once and
+## writes every spin()-style #+/#' chunk's own artifacts:
+## <stem>_<chunk>.out (captured stdout), <stem>_<chunk>.stout (a
+## full "> "-prompted REPL transcript of the same pass), and one
+## <stem>_<chunk>-<n>.png per captured plot. A chunk that errors gets
+## <stem>_<chunk>.crash instead, and processing halts right there --
+## nothing after a crash can run, so a crash= chunk needs to be the
+## last one anything else in the file depends on. See
+## r_support_design.md's implementation plan, step 7.
+##
+## split_chunks() below mirrors tent_pole/spin_chunks.py's boundary
+## rule -- deliberately reimplemented, not shared across languages
+## (see test_r_chunks_matches_spin_chunks.py, which asserts both
+## agree on the same input via `--chunks`).
+
+suppressPackageStartupMessages(library(evaluate))
+
+CHUNK_MARKER <- "^#\\+\\s*(.+?)\\s*$"
+PROSE_MARKER <- "#'"
+
+split_chunks <- function(lines) {
+  chunks <- list()
+  order <- character(0)
+  name <- NULL
+  buf <- character(0)
+
+  flush <- function() {
+    if (!is.null(name)) {
+      chunks[[name]] <<- trimws(paste(buf, collapse = "\n"), which = "right")
+    }
+  }
+
+  for (line in lines) {
+    m <- regmatches(line, regexec(CHUNK_MARKER, line))[[1]]
+    if (length(m) == 2) {
+      flush()
+      name <- m[2]
+      order <- c(order, name)
+      buf <- character(0)
+    } else if (startsWith(line, PROSE_MARKER)) {
+      flush()
+      name <- NULL
+      buf <- character(0)
+    } else if (!is.null(name)) {
+      buf <- c(buf, line)
+    }
+  }
+  flush()
+
+  chunks[unique(order)]
+}
+
+format_error <- function(item) {
+  call <- conditionCall(item)
+  if (!is.null(call)) {
+    paste0("Error in ", paste(deparse(call), collapse = " "),
+           " : ", conditionMessage(item), "\n")
+  } else {
+    paste0("Error: ", conditionMessage(item), "\n")
+  }
+}
+
+run_chunks <- function(path) {
+  lines <- readLines(path)
+  stem <- tools::file_path_sans_ext(path)
+
+  output <- list()
+  transcript <- list()
+  plot_count <- list()
+  processed <- character(0)
+  current <- NULL
+
+  enter <- function(name) {
+    if (!(name %in% processed)) {
+      processed <<- c(processed, name)
+      output[[name]] <<- ""
+      transcript[[name]] <<- ""
+      plot_count[[name]] <<- 0L
+    }
+  }
+
+  for (item in evaluate(lines)) {
+    if (inherits(item, "source")) {
+      text <- as.character(item)
+      one_line <- sub("\n$", "", text)
+      if (!grepl("\n", one_line) && grepl(CHUNK_MARKER, one_line)) {
+        current <- sub(CHUNK_MARKER, "\\1", one_line)
+        enter(current)
+      } else if (!grepl("\n", one_line) && startsWith(one_line, PROSE_MARKER)) {
+        current <- NULL
+      } else if (!is.null(current)) {
+        transcript[[current]] <- paste0(transcript[[current]], "> ", text)
+      }
+    } else if (is.character(item)) {
+      if (!is.null(current)) {
+        output[[current]] <- paste0(output[[current]], item)
+        transcript[[current]] <- paste0(transcript[[current]], item)
+      }
+    } else if (inherits(item, "recordedplot")) {
+      if (!is.null(current)) {
+        plot_count[[current]] <- plot_count[[current]] + 1L
+        png_path <- paste0(stem, "_", current, "-", plot_count[[current]], ".png")
+        grDevices::png(png_path)
+        replayPlot(item)
+        grDevices::dev.off()
+      }
+    } else if (inherits(item, "error")) {
+      if (!is.null(current)) {
+        cat(format_error(item), file = paste0(stem, "_", current, ".crash"))
+      }
+      break
+    }
+  }
+
+  for (name in processed) {
+    cat(output[[name]], file = paste0(stem, "_", name, ".out"))
+    cat(transcript[[name]], file = paste0(stem, "_", name, ".stout"))
+  }
+}
+
+args <- commandArgs(trailingOnly = TRUE)
+if (identical(args[1], "--chunks")) {
+  cat(names(split_chunks(readLines(args[2]))), sep = "\n")
+} else {
+  run_chunks(args[1])
+}
