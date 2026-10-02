@@ -74,6 +74,38 @@ def test_collect_deps_output_needs_only_raw_for_both():
     assert not any(d.endswith(".out.tpf") for d in html_deps)
 
 
+def test_collect_deps_plot_needs_tpf_for_html_and_raw_for_full():
+    """plot= uses the Image dependency shape, not the plain-file shape
+    output=/stout=/crash= use -- a plot is pushed/embedded as a real
+    image."""
+    elem = pf.CodeBlock(
+        "", classes=["r"],
+        attributes={"include": "demo.R", "chunk": "make-plot", "plot": "true"},
+    )
+    doc = make_doc(elem)
+
+    html_deps, full_deps = deps_filter.collect_deps(doc)
+
+    assert "demo_make-plot-1.png.tpf" in html_deps
+    assert "demo_make-plot-1.png" in full_deps
+    assert not any(d.endswith(".png.tpf.tpf") for d in html_deps)
+
+
+def test_collect_deps_output_is_chunk_aware():
+    elem = pf.CodeBlock(
+        "", classes=["r"],
+        attributes={
+            "include": "demo.R", "chunk": "summary-stats", "output": "true",
+        },
+    )
+    doc = make_doc(elem)
+
+    html_deps, full_deps = deps_filter.collect_deps(doc)
+
+    assert "demo_summary-stats.out" in html_deps
+    assert "demo_summary-stats.out" in full_deps
+
+
 ## collect_deps -- Image
 
 def test_collect_deps_image_needs_tpf_for_html_and_raw_for_full():

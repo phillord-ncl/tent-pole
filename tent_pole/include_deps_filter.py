@@ -71,6 +71,12 @@ def collect_deps(doc):
             if attrs.crash:
                 html_deps.append(attrs.crash_path)
                 full_deps.append(attrs.crash_path)
+            if attrs.plot:
+                ## Image dependency shape, not the plain-file shape
+                ## above: a plot is pushed/embedded as a real image,
+                ## the same as an Image element's own url below.
+                html_deps.append(attrs.plot_path + ".tpf")
+                full_deps.append(attrs.plot_path)
         elif isinstance(elem, Image):
             ## image_filter calls tpf(elem.url) unconditionally, never
             ## reads the raw file. pandoc's own --self-contained (the
