@@ -66,7 +66,7 @@ Then, any of:
   `tent-pole build` always targets beta, regardless of invocation),
 - export `TENT_POLE_USE_TEST_CONFIG=1` in the environment.
 
-`--beta` takes priority over `-c`/`--course`. `dev/sample-course/` in
+`--beta` takes priority over `-c`/`--course`. `dev/sample-course-python/` in
 the tent-pole checkout is a working example of a repo permanently set
 up this way (`beta = true` in its own `tent-pole.toml`).
 

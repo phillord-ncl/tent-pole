@@ -229,7 +229,7 @@ pipeline.
 Development
 ------------
 
-`dev/sample-course/` is a standalone fixture exercising every
+`dev/sample-course-python/` is a standalone fixture exercising every
 Markdown/`canvas-filter` feature, plus `.quiz.md` -> Canvas quiz, for
 reviewing a push against a test Canvas instance by eye -- see its own
 `README.md`.

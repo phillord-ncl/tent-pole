@@ -1,13 +1,13 @@
 """Real doit, no network -- the centerpiece test from
 claude-make-replacement.md's testing plan. Runs tent_pole.build.run_build
-against a temp copy of dev/sample-course, restricted to its Canvas-free
-`full`/`quiz_full` targets (no credentials needed, per the sample
-course's own README), and checks the properties the whole doit-backend
-design has been reasoning about: the right output comes out, an
-unchanged rebuild does nothing, and touching one file rebuilds only
-that file's task -- plus that a course's own dodo.py (test-image.png/
-test-video.mp4 here) is picked up at all, the extensibility case this
-design exists to preserve.
+against a temp copy of dev/sample-course-python, restricted to its
+Canvas-free `full`/`quiz_full` targets (no credentials needed, per the
+sample course's own README), and checks the properties the whole
+doit-backend design has been reasoning about: the right output comes
+out, an unchanged rebuild does nothing, and touching one file rebuilds
+only that file's task -- plus that a course's own dodo.py
+(test-image.png/test-video.mp4 here) is picked up at all, the
+extensibility case this design exists to preserve.
 """
 
 import os
@@ -25,13 +25,13 @@ pytestmark = pytest.mark.skipif(
 
 SAMPLE_COURSE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "dev", "sample-course",
+    "dev", "sample-course-python",
 )
 
 
 @pytest.fixture
 def sample_course(tmp_path, monkeypatch):
-    dest = tmp_path / "sample-course"
+    dest = tmp_path / "sample-course-python"
     shutil.copytree(SAMPLE_COURSE, dest)
     monkeypatch.chdir(dest)
     return dest

@@ -46,7 +46,7 @@ Any combination can appear on one code block (source is always shown;
 
 The same attributes work in a `.quiz.md` question's code blocks -- see
 [write a quiz](write-a-quiz.md) and
-`dev/sample-course/question-types-quiz.quiz.md` for a worked example
+`dev/sample-course-python/question-types-quiz.quiz.md` for a worked example
 (Questions 4-6 there specifically compare `include=` with and without
 `output=`/`crash=`).
 

@@ -140,6 +140,6 @@ Real per-question/group identity, drift detection, and a
 ## Not supported yet
 
 Matching, numerical, fill-in-multiple-blanks, and question-bank
-question types. `dev/sample-course/question-types-quiz.quiz.md` and
+question types. `dev/sample-course-python/question-types-quiz.quiz.md` and
 `question-groups-quiz.quiz.md` in the tent-pole checkout are complete,
 working examples of everything above.

@@ -120,7 +120,7 @@ def generate(source):
     ## should say. Making .tpd a co-target of e.g. a .tpf here would
     ## force `make full` (no Canvas access wanted) to push files to
     ## Canvas just to regenerate a dependency-listing file -- confirmed
-    ## the hard way running this for real against dev/sample-course.
+    ## the hard way running this for real against dev/sample-course-python.
     stem = os.path.splitext(os.path.basename(source))[0]
     html_line = "{stem}.html: {source} {deps}".format(
         stem=stem, source=source, deps=" ".join(html_deps)

@@ -110,7 +110,7 @@ browser, useful while iterating before anything touches Canvas.
 
 ## More markdown features
 
-`dev/sample-course/markdown-features-1.md` in the tent-pole checkout
+`dev/sample-course-python/markdown-features-1.md` in the tent-pole checkout
 is a working, annotated example exercising every feature above plus
 tables, blockquotes, and nested lists -- copy from there if in doubt
 about what pandoc/canvas-filter support.
