@@ -99,6 +99,39 @@ def test_hide_crash_suppresses_traceback_but_keeps_crash_declared(tmp_path):
     assert "Crashes:" not in [getattr(b, "text", None) for b in result]
 
 
+def test_chunk_attribute_shows_only_the_named_chunk(tmp_path):
+    source = tmp_path / "demo.R"
+    source.write_text("#+ setup\nx <- 1\n#+ summary\ncat(x)\n")
+
+    elem = pf.CodeBlock(
+        "", classes=["r"],
+        attributes={"include": str(source), "chunk": "summary"},
+    )
+    result = code_include_filter.code_filter(elem, doc=None)
+
+    assert len(result) == 1
+    assert result[0].text == "cat(x)"
+
+
+def test_plot_attribute_appends_an_inline_image(tmp_path):
+    source = tmp_path / "demo.R"
+    source.write_text("#+ make-plot\nplot(1)\n")
+    plot_path = str(tmp_path / "demo_make-plot-1.png")
+    (tmp_path / "demo_make-plot-1.png").write_bytes(b"")
+
+    elem = pf.CodeBlock(
+        "", classes=["r"],
+        attributes={"include": str(source), "chunk": "make-plot", "plot": "true"},
+    )
+    result = code_include_filter.code_filter(elem, doc=None)
+
+    assert len(result) == 3
+    assert result[1].content[0].text == "Plot:"
+    image = result[2].content[0]
+    assert isinstance(image, pf.Image)
+    assert image.url == plot_path
+
+
 def test_no_language_class_include_still_substitutes(tmp_path):
     source = tmp_path / "output.txt"
     source.write_text("some captured text")
