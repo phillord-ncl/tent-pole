@@ -61,6 +61,15 @@ def task_out():
     """%.out: %.py -- run python, capture stdout."""
     for out in _referenced("out"):
         py = os.path.splitext(out)[0] + ".py"
+        if not os.path.exists(py):
+            ## Some other language's task_out generator owns this
+            ## target -- a .out reference discovered from, say, a .R
+            ## source. include-code.md: "a second language would get
+            ## its own doit rules module alongside it, generating the
+            ## same kind of .out/.stout/.crash artifact" -- same
+            ## suffixes, so every language's generator sees every
+            ## reference and must filter down to its own.
+            continue
         yield {
             "name": out,
             "actions": [(_run, [py, out, "stdout"])],
@@ -75,6 +84,8 @@ def task_crash():
     the expected/demonstrated behaviour, not a build failure."""
     for crash in _referenced("crash"):
         py = os.path.splitext(crash)[0] + ".py"
+        if not os.path.exists(py):
+            continue  ## see task_out's own comment on this check
         yield {
             "name": crash,
             "actions": [(_run, [py, crash, "stderr"])],
@@ -89,6 +100,8 @@ def task_stout():
     REPL-transcript tool (bin/python-shell)."""
     for stout in _referenced("stout"):
         py = os.path.splitext(stout)[0] + ".py"
+        if not os.path.exists(py):
+            continue  ## see task_out's own comment on this check
         yield {
             "name": stout,
             "actions": [(_run, [py, stout, "shell"])],
@@ -107,6 +120,8 @@ def task_test_out():
     covers that shape."""
     for test_out in _referenced("test_out"):
         py = test_out[: -len(".test_out")] + ".py"
+        if not os.path.exists(py):
+            continue  ## see task_out's own comment on this check
         yield {
             "name": test_out,
             "actions": [(_run, [py, test_out, "test"])],

@@ -20,11 +20,17 @@ def _write(path, content):
 
 @pytest.fixture
 def course_dir(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    return tmp_path
+    ## A subdirectory of tmp_path, not tmp_path itself, so a
+    ## "../python/..." include= path (see the directory-path test
+    ## below) still resolves inside tmp_path rather than escaping it.
+    course = tmp_path / "course"
+    course.mkdir()
+    monkeypatch.chdir(course)
+    return course
 
 
 def test_task_out_discovers_output_true_reference(course_dir):
+    _write(course_dir / "demo.py", "")
     _write(course_dir / "page.md", "```{.python include=demo.py output=true}\n```\n")
 
     (task,) = list(python_rules.task_out())
@@ -34,7 +40,20 @@ def test_task_out_discovers_output_true_reference(course_dir):
     assert task["targets"] == ["demo.out"]
 
 
+def test_task_out_skips_a_target_whose_py_stem_does_not_exist(course_dir):
+    """Regression: task_out's own discovery (_referenced) matches any
+    .out reference regardless of which language's include= produced
+    it -- a page doing `.R include=plot.R output=true` also shows up
+    here. Without the source-file-exists check, python.py would
+    wrongly claim plot.out and try to run a nonexistent plot.py."""
+    _write(course_dir / "plot.R", "")
+    _write(course_dir / "page.md", "```{.r include=plot.R output=true}\n```\n")
+
+    assert list(python_rules.task_out()) == []
+
+
 def test_task_crash_discovers_crash_true_reference(course_dir):
+    _write(course_dir / "broken.py", "")
     _write(course_dir / "page.md", "```{.python include=broken.py crash=true}\n```\n")
 
     (task,) = list(python_rules.task_crash())
@@ -44,6 +63,7 @@ def test_task_crash_discovers_crash_true_reference(course_dir):
 
 
 def test_task_stout_discovers_stout_true_reference(course_dir):
+    _write(course_dir / "repl.py", "")
     _write(course_dir / "page.md", "```{.python include=repl.py stout=true}\n```\n")
 
     (task,) = list(python_rules.task_stout())
@@ -59,6 +79,7 @@ def test_task_test_out_discovers_plain_include_of_the_derived_file(course_dir):
     the already-derived .test_out file itself. Found live: a page
     doing `include=python/test_stats.test_out` had nothing building
     that file at all, since task_test_out didn't exist yet."""
+    _write(course_dir / "test_stats.py", "")
     _write(course_dir / "page.md", "```{include=test_stats.test_out}\n```\n")
 
     (task,) = list(python_rules.task_test_out())
@@ -69,6 +90,8 @@ def test_task_test_out_discovers_plain_include_of_the_derived_file(course_dir):
 
 
 def test_task_test_out_recovers_the_py_stem_from_a_directory_path(course_dir):
+    (course_dir.parent / "python").mkdir()
+    _write(course_dir.parent / "python" / "test_stats.py", "")
     _write(
         course_dir / "page.md",
         "```{include=../python/test_stats.test_out}\n```\n",
