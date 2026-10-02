@@ -31,3 +31,4 @@ dev/sample-course-r/*.out
 dev/sample-course-r/*.stout
 dev/sample-course-r/*.crash
 dev/sample-course-r/*.png
+dev/sample-course-r/tent-pole.toml.tpm
