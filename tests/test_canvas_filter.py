@@ -104,6 +104,44 @@ def test_code_filter_crash_appends_traceback(tmp_path):
     assert "ZeroDivisionError\n" in texts
 
 
+def test_code_filter_chunk_shows_only_the_named_chunk(tmp_path):
+    source = tmp_path / "demo.R"
+    source.write_text("#+ setup\nx <- 1\n#+ summary\ncat(x)\n")
+    write_tpf(source, {"id": 42})
+
+    elem = pf.CodeBlock(
+        "", classes=[],
+        attributes={"include": str(source), "chunk": "summary"},
+    )
+    result = canvas_filter.code_filter(elem, doc=None)
+
+    assert result[0].text == "<pre><code>cat(x)\n</code></pre>"
+
+
+def test_code_filter_plot_reuses_image_filter(tmp_path):
+    """plot= calls image_filter directly rather than duplicating its
+    tpf-lookup/<img> logic."""
+    source = tmp_path / "demo.R"
+    source.write_text("#+ make-plot\nplot(1)\n")
+    write_tpf(source, {"id": 42})
+    plot_path = tmp_path / "demo_make-plot-1.png"
+    write_tpf(plot_path, {"id": 7, "course": 16807})
+
+    elem = pf.CodeBlock(
+        "", classes=["r"],
+        attributes={"include": str(source), "chunk": "make-plot", "plot": "true"},
+    )
+    result = canvas_filter.code_filter(elem, doc=None)
+
+    labels = [getattr(b.content[0], "text", None) for b in result if hasattr(b, "content")]
+    assert "Plot:" in labels
+    plot_para = result[-1]
+    assert isinstance(plot_para, pf.Para)
+    raw = plot_para.content[0]
+    assert isinstance(raw, pf.RawInline)
+    assert "courses/16807/files/7/preview" in raw.text
+
+
 def test_code_filter_hide_crash_suppresses_traceback(tmp_path):
     """See tent-pole issue #14 review: crash= alone still declares the
     program is expected to crash (needed for a real "will this code

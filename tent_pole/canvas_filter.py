@@ -16,6 +16,7 @@ from panflute import *
 from . import config
 from . import quiz_paths
 from .code_include_attrs import CodeIncludeAttrs
+from .spin_chunks import split_chunks
 
 COMPILED_AT_PATTERN = re.compile(r'data-compiled-at="([^"]*)"')
 
@@ -56,6 +57,12 @@ def code_filter(elem, doc):
     with open(attrs.include or path) as fh:
         content = fh.read()
 
+    ## chunk= only changes what's shown here -- never what actually
+    ## ran to produce output_path/stout_path/crash_path/plot_path,
+    ## which already ran the chunk's full dependency chain.
+    if attrs.chunk:
+        content = split_chunks(content)[attrs.chunk]
+
     if lang:
         highlighted = highlight_source(content, lang)
     else:
@@ -84,6 +91,16 @@ def code_filter(elem, doc):
     if show_crash:
         with open(attrs.crash_path) as fh: crash_text = fh.read()
 
+    if attrs.plot:
+        ## Reuse image_filter's own tpf-lookup/<img> logic rather than
+        ## duplicating it -- a plot is pushed/rendered exactly like
+        ## any other Image element, just one tent-pole generated
+        ## itself instead of one the author wrote by hand.
+        plot_image = image_filter(
+            Image(Str(os.path.basename(attrs.plot_path)), url=attrs.plot_path),
+            doc,
+        )
+
     return [i for i in
             [
                 RawBlock(highlighted),
@@ -96,7 +113,9 @@ def code_filter(elem, doc):
                 attrs.stout and Para(Str("Prints:")),
                 attrs.stout and CodeBlock(stout_text),
                 show_crash and Para(Str("Crashes:")),
-                show_crash and CodeBlock(crash_text)
+                show_crash and CodeBlock(crash_text),
+                attrs.plot and Para(Str("Plot:")),
+                attrs.plot and Para(plot_image)
             ]
             if i
         ]
