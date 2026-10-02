@@ -39,6 +39,21 @@ project that lives anywhere (unlike `poetry run`, which needs to run
 from inside the checkout). `poetry install` is still what you want for
 running tent-pole's own test suite.
 
+## For R support
+
+Building a page that `include=`s a `.R` file needs
+[R](https://www.r-project.org/) itself plus the
+[`evaluate`](https://evaluate.r-lib.org/) package -- deliberately not
+`knitr`, which `evaluate` is itself built on: `knitr` weaves a whole
+literate document, which tent-pole doesn't need, so `evaluate` alone
+is a much smaller dependency.
+
+```
+R -e 'install.packages("evaluate")'
+```
+
+No separate install is needed for Python-only content.
+
 ## On Windows
 
 Python and Pandoc are not preinstalled. `winget` covers both -- no
