@@ -102,6 +102,26 @@ and a code block showing a `ZeroDivisionError` traceback (the script
 deliberately divides by zero) -- confirms tent-pole/canvas-filter can
 display a script's failure, not just its successful output.
 
+## Chunk selection (chunk=), including a nested one
+
+```{.python include=chunked_demo.py chunk=summary-stats}
+```
+
+**Check:** only the `summary-stats` chunk's own four lines (the two
+assignments and two `print(...)` calls) are shown, syntax-highlighted
+as Python -- not `setup`, not the rest of the file.
+
+```{.python include=chunked_demo.py chunk=average-body}
+```
+
+**Check:** just `return sum(values) / len(values)`, with no leading
+indentation -- `average-body` is a `#+` marker nested inside
+`average()`'s own function body in `chunked_demo.py`, not a top-level
+chunk, and the displayed source is dedented so it reads as standalone
+code rather than carrying the function's own indentation along.
+`chunk=` is display-only for now (no `output=`/`stout=`/`crash=`
+support yet -- see `docs/include-code.md`).
+
 ## Image
 
 ![A small orange/blue test checkerboard](test-image.png "Test image")
