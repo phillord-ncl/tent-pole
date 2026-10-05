@@ -32,6 +32,18 @@ section of a longer file rather than the whole thing:
 -- see [install](install.md#for-r-support) for the one extra
 dependency (`evaluate`) this needs.
 
+`chunk=` works for Python too, including a marker nested inside a
+`def`/`class` body -- the displayed source is dedented so it reads as
+standalone code:
+
+````markdown
+```python {include=demo.py chunk=average-body}
+```
+````
+
+-- but only for display: Python's `output=`/`stout=`/`crash=` aren't
+chunk-aware the way R's are (see the `chunk=` attribute below).
+
 ## Attributes
 
 - `include=<file>` -- the source file to render. Required for anything
@@ -50,16 +62,29 @@ dependency (`evaluate`) this needs.
   but doesn't render the "Crashes:" section. For a question or page
   that asks "will this code crash?" without answering itself in the
   same breath.
-- `chunk=<name>` -- R only, for now. Shows only the named chunk's own
-  source rather than the whole file -- `#+ chunk-name` marks where a
-  chunk starts in the `.R` file (knitr's own `spin()` convention,
-  nothing tent-pole-invented), `#'` marks prose, and a chunk runs until
-  the next marker or end of file. `output=`/`stout=`/`crash=` still run
-  the chunk's *full dependency chain* (every chunk up to and including
-  the named one, in the same file) -- `chunk=` only changes what's
-  *shown*, never what actually executed; chunks in the same file share
-  state (variables, loaded packages) the same way lines later in one
-  script always could, chunks in different files never do.
+- `chunk=<name>` -- Shows only the named chunk's own source rather
+  than the whole file -- `#+ chunk-name` marks where a chunk starts
+  (knitr's own `spin()` convention, nothing tent-pole-invented), `#'`
+  marks prose, and a chunk runs until the next marker or end of file.
+  A marker can sit at any indentation -- nested inside a Python
+  `def`/`class` body, say -- and the shown source is dedented, so it
+  reads as standalone code rather than carrying its enclosing block's
+  indentation along.
+  - **For R**: `output=`/`stout=`/`crash=` still run the chunk's
+    *full dependency chain* (every chunk up to and including the
+    named one, in the same file) -- `chunk=` only changes what's
+    *shown*, never what actually executed; chunks in the same file
+    share state (variables, loaded packages) the same way lines later
+    in one script always could, chunks in different files never do.
+  - **For Python**: `chunk=` is display-only for now. Combining it
+    with `output=`/`stout=`/`crash=` isn't supported -- those still
+    only ever run the *whole* file, exactly as without `chunk=` at
+    all. Chunk-aware execution needs its own design once there's a
+    concrete use case for it (unlike R, a marker nested inside a
+    function/class body doesn't correspond to anything that runs when
+    the file runs top to bottom -- it only runs if and when something
+    calls that function, so "the chunk's own output" isn't
+    well-defined the way it is for a flat R script).
 - `plot=true`/`plot=<n>` -- R only. Shows the chunk's first captured
   plot (or its `<n>`th) as an inline image, under a "Plot:" label. A
   chunk producing fewer plots than asked for is a build error, not
