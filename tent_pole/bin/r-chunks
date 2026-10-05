@@ -17,8 +17,25 @@
 
 suppressPackageStartupMessages(library(evaluate))
 
-CHUNK_MARKER <- "^#\\+\\s*(.+?)\\s*$"
-PROSE_MARKER <- "#'"
+CHUNK_MARKER <- "^\\s*#\\+\\s*(.+?)\\s*$"
+PROSE_MARKER <- "^\\s*#'"
+
+dedent <- function(text_lines) {
+  ## Mirrors spin_chunks.py's textwrap.dedent() closely enough for
+  ## real code: strips the shortest common leading-whitespace run
+  ## found across every non-blank line (blank lines don't count
+  ## against it, and are normalised to "") -- a no-op when nothing's
+  ## indented, which is every chunk in demo.R today.
+  non_blank <- text_lines[nzchar(trimws(text_lines, which = "right"))]
+  if (length(non_blank) == 0) {
+    return(rep("", length(text_lines)))
+  }
+  leading <- regmatches(non_blank, regexpr("^[ \t]*", non_blank))
+  prefix_len <- min(nchar(leading))
+  vapply(text_lines, function(l) {
+    if (!nzchar(trimws(l, which = "right"))) "" else substring(l, prefix_len + 1)
+  }, character(1), USE.NAMES = FALSE)
+}
 
 split_chunks <- function(lines) {
   chunks <- list()
@@ -28,7 +45,8 @@ split_chunks <- function(lines) {
 
   flush <- function() {
     if (!is.null(name)) {
-      chunks[[name]] <<- trimws(paste(buf, collapse = "\n"), which = "right")
+      chunks[[name]] <<-
+        trimws(paste(dedent(buf), collapse = "\n"), which = "right")
     }
   }
 
@@ -39,7 +57,7 @@ split_chunks <- function(lines) {
       name <- m[2]
       order <- c(order, name)
       buf <- character(0)
-    } else if (startsWith(line, PROSE_MARKER)) {
+    } else if (grepl(PROSE_MARKER, line)) {
       flush()
       name <- NULL
       buf <- character(0)
@@ -88,7 +106,7 @@ run_chunks <- function(path) {
       if (!grepl("\n", one_line) && grepl(CHUNK_MARKER, one_line)) {
         current <- sub(CHUNK_MARKER, "\\1", one_line)
         enter(current)
-      } else if (!grepl("\n", one_line) && startsWith(one_line, PROSE_MARKER)) {
+      } else if (!grepl("\n", one_line) && grepl(PROSE_MARKER, one_line)) {
         current <- NULL
       } else if (!is.null(current)) {
         transcript[[current]] <- paste0(transcript[[current]], "> ", text)
@@ -123,6 +141,11 @@ run_chunks <- function(path) {
 args <- commandArgs(trailingOnly = TRUE)
 if (identical(args[1], "--chunks")) {
   cat(names(split_chunks(readLines(args[2]))), sep = "\n")
+} else if (identical(args[1], "--chunk")) {
+  ## One named chunk's own dedented text -- debugging, and the
+  ## cross-language fixture test's way of comparing actual chunk
+  ## content, not just boundary names.
+  cat(split_chunks(readLines(args[3]))[[args[2]]])
 } else {
   run_chunks(args[1])
 }
