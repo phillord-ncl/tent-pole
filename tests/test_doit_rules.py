@@ -41,6 +41,42 @@ def test_tent_pole_falls_back_to_sys_argv0():
     assert result.stdout.strip() == "/opt/bin/tent-pole-custom"
 
 
+def test_canvas_filter_carries_the_same_suffix_as_tent_pole():
+    """Under a `pipx install --editable --suffix=-next` worktree
+    install, every script in that venv carries the suffix, so the
+    sibling filter TENT_POLE calls through pandoc must be
+    canvas-filter-next in the same directory, never the bare,
+    unsuffixed name."""
+    env = dict(os.environ)
+    for name in ("TENT_POLE", "CANVAS_FILTER", "CODE_INCLUDE_FILTER"):
+        env.pop(name, None)
+    result = subprocess.run(
+        [sys.executable, "-c",
+         "import sys; sys.argv[0] = '/opt/bin/tent-pole-next'\n"
+         "from tent_pole.doit_rules import core\n"
+         "print(core.CANVAS_FILTER)\n"
+         "print(core.CODE_INCLUDE_FILTER)"],
+        capture_output=True, text=True, check=True, env=env,
+    )
+    canvas_filter, code_include_filter = result.stdout.strip().splitlines()
+    assert canvas_filter == "/opt/bin/canvas-filter-next"
+    assert code_include_filter == "/opt/bin/code-include-filter-next"
+
+
+def test_canvas_filter_falls_back_to_the_bare_name_when_unsuffixed():
+    env = dict(os.environ)
+    for name in ("TENT_POLE", "CANVAS_FILTER", "CODE_INCLUDE_FILTER"):
+        env.pop(name, None)
+    result = subprocess.run(
+        [sys.executable, "-c",
+         "import sys; sys.argv[0] = '/opt/bin/tent-pole'\n"
+         "from tent_pole.doit_rules import core\n"
+         "print(core.CANVAS_FILTER)"],
+        capture_output=True, text=True, check=True, env=env,
+    )
+    assert result.stdout.strip() == "/opt/bin/canvas-filter"
+
+
 def _write(path, content):
     path.write_text(content)
 

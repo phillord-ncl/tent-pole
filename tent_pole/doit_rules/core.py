@@ -34,12 +34,30 @@ from .. import include_deps_filter
 ## invocation is already resolved to a full path by the shell before
 ## Python ever sees it.
 TENT_POLE = os.environ.get("TENT_POLE") or sys.argv[0]
-_SCRIPT_DIR = os.path.dirname(sys.executable)
-CANVAS_FILTER = os.environ.get(
-    "CANVAS_FILTER", os.path.join(_SCRIPT_DIR, "canvas-filter")
+
+## canvas-filter/code-include-filter must resolve from the same venv
+## and under the same pipx suffix as TENT_POLE itself -- a plain bare
+## name would risk matching whichever happens to be first on PATH
+## instead, but a fixed bare "canvas-filter" also breaks under
+## `pipx install --editable --suffix=-next`: every script in that
+## venv carries the suffix, so the real sibling is
+## "canvas-filter-next", never the bare name. Deriving the suffix from
+## TENT_POLE's own basename keeps both cases correct.
+_TENT_POLE_DIR, _TENT_POLE_NAME = os.path.split(TENT_POLE)
+_TENT_POLE_SUFFIX = (
+    _TENT_POLE_NAME[len("tent-pole"):]
+    if _TENT_POLE_NAME.startswith("tent-pole") else ""
 )
+
+
+def _sibling_filter(name):
+    filtername = name + _TENT_POLE_SUFFIX
+    return os.path.join(_TENT_POLE_DIR, filtername) if _TENT_POLE_DIR else filtername
+
+
+CANVAS_FILTER = os.environ.get("CANVAS_FILTER", _sibling_filter("canvas-filter"))
 CODE_INCLUDE_FILTER = os.environ.get(
-    "CODE_INCLUDE_FILTER", os.path.join(_SCRIPT_DIR, "code-include-filter")
+    "CODE_INCLUDE_FILTER", _sibling_filter("code-include-filter")
 )
 
 
