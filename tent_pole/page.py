@@ -105,8 +105,8 @@ def page_obj():
     return page_by_guess(config.config_page())
 
 ## Errors
-class PageExistsError(Exception):
-    def __init__(self, course, canvastitle, message="Page Exists"):
+class PageExistsError(click.ClickException):
+    def __init__(self, course, canvastitle):
         self.course = course.course_code
         self.canvastitle = canvastitle
 
@@ -307,9 +307,10 @@ def push(filename, force):
     ## reset) has nothing live left to protect against overwriting, so
     ## just recreate it below rather than crashing on "no page found"
     ## from inside what should be an optional safety check.
+    tpp_exists = os.path.exists(__tpp_path(filename))
     if (
         not force
-        and os.path.exists(__tpp_path(filename))
+        and tpp_exists
         and __find_page(courseobj, canvasname) is not None
     ):
         problems = __remote_drift(filename, __load_tpp(filename))
@@ -317,6 +318,16 @@ def push(filename, force):
             raise click.ClickException(
                 "; ".join(problems) + " -- use --force to overwrite anyway"
             )
+
+    ## No local record of ever pushing this file before: a page
+    ## already existing under this canvasname means some OTHER file
+    ## already claimed it (e.g. two files sharing a basename in
+    ## different directories), not this one being re-pushed after a
+    ## lost local .tpp -- refuse rather than silently taking it over,
+    ## the same way `create` already would. --force bypasses this the
+    ## same way it bypasses the drift check above.
+    if not force and not tpp_exists and __page_exists(courseobj, canvasname):
+        raise PageExistsError(courseobj, __canvastitle_from_canvasname(canvasname))
 
     page = __get_create_page(courseobj, canvasname)
     page.edit (

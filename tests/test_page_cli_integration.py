@@ -20,6 +20,8 @@ class FakePage:
 
 
 class FakeCourse:
+    course_code = "TEST101"
+
     def __init__(self, page=None):
         self._page = page or FakePage()
 
@@ -48,6 +50,23 @@ def test_dump_writes_tpp_stamp_file(tmp_path, monkeypatch):
     assert (tmp_path / "example.tpp").exists()
 
 
+def test_create_refuses_existing_page_cleanly(tmp_path, monkeypatch):
+    """create raises PageExistsError on an existing page -- must be a
+    clean click error (exit code set, no raw traceback), since push's
+    own collision guard now relies on the same exception on every
+    ordinary build, not just this manual command."""
+    monkeypatch.setattr(page.course, "course_obj", lambda: FakeCourse())
+
+    target = tmp_path / "example.html"
+    target.write_text("<p>hi</p>")
+
+    result = CliRunner().invoke(page.page, ["create", str(target)])
+
+    assert result.exit_code != 0
+    assert "Page Exists" in result.output
+    assert "Traceback" not in result.output
+
+
 def write_tpp(path, last_edited_by):
     with open(page.__tpp_path(str(path)), "w") as fh:
         toml.dump({
@@ -60,7 +79,29 @@ def write_tpp(path, last_edited_by):
 def test_push_skips_drift_check_when_no_tpp_exists(tmp_path, monkeypatch):
     """A first-ever push has no baseline to drift from -- it must
     succeed rather than trying (and failing) to load a .tpp that has
-    never been written yet."""
+    never been written yet. --force: without a local .tpp, a page
+    already existing under this canvasname is otherwise treated as a
+    collision with some other file (see
+    test_push_refuses_existing_page_with_no_local_tpp below) -- this
+    test is about the drift-check load itself, not that guard."""
+    fake_page = FakePage(last_edited_by={"id": 1, "display_name": "Someone"})
+    monkeypatch.setattr(page.course, "course_obj", lambda: FakeCourse(fake_page))
+
+    target = tmp_path / "example.html"
+    target.write_text("<p>hi</p>")
+
+    result = CliRunner().invoke(page.page, ["push", "--force", str(target)])
+
+    assert result.exit_code == 0, result.output
+    assert len(fake_page.edit_calls) == 1
+
+
+def test_push_refuses_existing_page_with_no_local_tpp(tmp_path, monkeypatch):
+    """The point of this fix: two files that happen to share a
+    canvasname (e.g. same basename in different directories) must not
+    silently clobber each other. A page already existing under this
+    canvasname, with no local .tpp recording that *this* file ever
+    created it, is refused rather than overwritten."""
     fake_page = FakePage(last_edited_by={"id": 1, "display_name": "Someone"})
     monkeypatch.setattr(page.course, "course_obj", lambda: FakeCourse(fake_page))
 
@@ -68,6 +109,23 @@ def test_push_skips_drift_check_when_no_tpp_exists(tmp_path, monkeypatch):
     target.write_text("<p>hi</p>")
 
     result = CliRunner().invoke(page.page, ["push", str(target)])
+
+    assert result.exit_code != 0
+    assert "Page Exists" in result.output
+    assert len(fake_page.edit_calls) == 0
+
+
+def test_push_force_overwrites_existing_page_with_no_local_tpp(tmp_path, monkeypatch):
+    """--force is the escape hatch for the guard above -- e.g.
+    reclaiming a page on a fresh checkout that has lost its local
+    .tpp but genuinely belongs to this file."""
+    fake_page = FakePage(last_edited_by={"id": 1, "display_name": "Someone"})
+    monkeypatch.setattr(page.course, "course_obj", lambda: FakeCourse(fake_page))
+
+    target = tmp_path / "example.html"
+    target.write_text("<p>hi</p>")
+
+    result = CliRunner().invoke(page.page, ["push", "--force", str(target)])
 
     assert result.exit_code == 0, result.output
     assert len(fake_page.edit_calls) == 1

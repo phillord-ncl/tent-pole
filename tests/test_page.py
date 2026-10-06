@@ -54,6 +54,8 @@ class FakePage:
 
 
 class FakeCourseForPage:
+    course_code = "TEST101"
+
     def __init__(self, page_obj):
         self._page = page_obj
 
@@ -373,7 +375,13 @@ def test_push_records_local_state_as_part_of_the_same_call(tmp_path, monkeypatch
     fake_page = FakePage(url="foo", title="Foo")
     monkeypatch.setattr(page.course, "course_obj", lambda: FakeCourseForPage(fake_page))
 
-    result = CliRunner().invoke(page.page, ["push", "foo.html"], catch_exceptions=False)
+    ## --force: no local .tpp exists yet (this is the first push this
+    ## test performs), which the push-time collision guard would
+    ## otherwise read as "some other file already claimed this page" --
+    ## irrelevant to what this test is actually checking.
+    result = CliRunner().invoke(
+        page.page, ["push", "--force", "foo.html"], catch_exceptions=False
+    )
 
     assert result.exit_code == 0, result.output
     tppfile = tmp_path / "foo.tpp"
