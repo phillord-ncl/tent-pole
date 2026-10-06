@@ -87,7 +87,7 @@ def code_filter(elem, doc):
     if attrs.stout:
         with open(attrs.stout_path) as fh: stout_text = fh.read()
 
-    show_crash = (attrs.crash or attrs.compile_fail) and not attrs.hide_crash
+    show_crash = attrs.expect_failure and not attrs.hide_crash
     if show_crash:
         with open(attrs.crash_path) as fh: crash_text = fh.read()
 

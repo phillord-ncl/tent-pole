@@ -89,8 +89,13 @@ class CodeIncludeAttrs:
         return self.chunk_stem + ".crash"
 
     @property
-    def compile_fail_path(self):
-        return self.crash_path
+    def expect_failure(self):
+        """True whenever this block's declared failure artifact
+        (crash= or compile-fail=) should be captured instead of a
+        normal output/stout result -- the one condition canvas_filter,
+        code_include_filter, and include_deps_filter all test, rather
+        than each repeating `crash or compile_fail` themselves."""
+        return self.crash or self.compile_fail
 
     @property
     def plot_path(self):
@@ -104,7 +109,7 @@ class CodeIncludeAttrs:
             paths.append(self.output_path)
         if self.stout:
             paths.append(self.stout_path)
-        if self.crash or self.compile_fail:
+        if self.expect_failure:
             paths.append(self.crash_path)
         if self.plot:
             paths.append(self.plot_path)

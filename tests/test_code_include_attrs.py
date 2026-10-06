@@ -39,6 +39,14 @@ def test_plot_false_is_the_same_as_absent():
     assert attrs.plot is None
 
 
+def test_expect_failure_is_true_for_either_crash_or_compile_fail():
+    assert _attrs(include="demo.py", crash="true").expect_failure is True
+    assert _attrs(
+        include="demo.java", **{"compile-fail": "true"}
+    ).expect_failure is True
+    assert _attrs(include="demo.py").expect_failure is False
+
+
 def test_compile_fail_false_behaves_as_absent():
     attrs = _attrs(include="demo.java", **{"compile-fail": "false"})
 
