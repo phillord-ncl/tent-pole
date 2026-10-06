@@ -226,6 +226,34 @@ def test_push_preserves_nested_course_path(tmp_path, monkeypatch):
     ]
 
 
+def test_push_resolves_folder_from_git_root_not_cwd(tmp_path, monkeypatch):
+    """Running a file command (or the build's own per-module fan-out,
+    which dispatches with cwd set to each module directory in turn)
+    from inside a nested module directory must still resolve the
+    Canvas folder from the whole course's root, not treat that module
+    directory as its own root -- otherwise two modules sharing a
+    same-shaped subpath collide in Canvas."""
+    (tmp_path / ".git").mkdir()
+    module_dir = tmp_path / "01-first-version"
+    write_local_file(module_dir / "HelloWorld.java")
+    monkeypatch.chdir(module_dir)
+    fake_course = FakeCourseForFile([])
+    monkeypatch.setattr(tp_file.course, "course_obj", lambda: fake_course)
+
+    result = CliRunner().invoke(tp_file.file, ["push", "HelloWorld.java"])
+
+    assert result.exit_code == 0, result.output
+    assert fake_course.upload_calls == [
+        (
+            "HelloWorld.java",
+            {
+                "parent_folder_path": "tent-pole/01-first-version",
+                "on_duplicate": "overwrite",
+            },
+        )
+    ]
+
+
 def test_file_lookup_disambiguates_same_filename_by_folder(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     first_local = write_local_file(

@@ -29,6 +29,27 @@ def fetch_config(files):
         files, {}
     )
 
+def git_root(start_dir=None):
+    """The nearest enclosing git repo/worktree directory at or above
+    start_dir (default: the current directory), inclusive -- either a
+    real repo (.git/) or a worktree (.git file pointing at the shared
+    repo, which os.path.exists matches just as well). None if no such
+    directory exists between start_dir and the filesystem root.
+
+    This is the one course-wide boundary tent-pole has: every module
+    subdirectory lives inside the same course repo, so it is also what
+    file.py uses as the root a Canvas folder path is computed relative
+    to, rather than os.getcwd() -- which would otherwise vary depending
+    on which module directory a command happens to be run from (or
+    dispatched into, by the build's own per-module fan-out)."""
+    current = os.path.abspath(start_dir or os.getcwd())
+    while not os.path.exists(os.path.join(current, ".git")):
+        parent = os.path.dirname(current)
+        if parent == current:
+            return None
+        current = parent
+    return current
+
 def ancestor_config_paths(start_dir=None):
     """Every tent-pole.toml from the nearest enclosing git repo root down
     to start_dir (default: the current directory), root-most first.
@@ -38,22 +59,21 @@ def ancestor_config_paths(start_dir=None):
     inherit it, overriding only what a deeper directory actually needs
     to override.
 
-    Stops walking upward as soon as a directory containing .git is found
-    (inclusive of that directory) -- either a real repo (.git/) or a
-    worktree (.git file pointing at the shared repo, which os.path.exists
-    matches just as well). Deliberately never crawls all the way to the
-    filesystem root: if no .git boundary is found above start_dir at all,
-    there's no cascade -- just start_dir itself -- rather than risk
-    picking up an unrelated tent-pole.toml from outside the project."""
+    Deliberately never crawls all the way to the filesystem root: if no
+    git_root() is found above start_dir at all, there's no cascade --
+    just start_dir itself -- rather than risk picking up an unrelated
+    tent-pole.toml from outside the project."""
     start = os.path.abspath(start_dir or os.getcwd())
-    dirs = [start]
+    root = git_root(start)
+    if root is None:
+        return [os.path.join(start, "tent-pole.toml")]
+    dirs = []
     current = start
-    while not os.path.exists(os.path.join(current, ".git")):
-        parent = os.path.dirname(current)
-        if parent == current:
-            return [os.path.join(start, "tent-pole.toml")]
-        current = parent
+    while True:
         dirs.append(current)
+        if current == root:
+            break
+        current = os.path.dirname(current)
     dirs.reverse()
     return [os.path.join(d, "tent-pole.toml") for d in dirs]
 

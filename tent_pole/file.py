@@ -3,6 +3,7 @@ import os
 import time
 import toml
 
+from . import config
 from . import course
 from . import manifest
 
@@ -17,20 +18,20 @@ def __canvasfilename_from_path(path):
 
 
 def __course_relative_path(filename):
-    """Path beneath the current course root, without allowing uploads
-    outside that root. Absolute paths inside the working directory keep
-    their relative structure; external paths retain the old basename-only
-    behavior."""
-    path = os.path.normpath(os.fspath(filename))
-    if os.path.isabs(path):
-        root = os.path.abspath(os.getcwd())
-        absolute = os.path.abspath(path)
-        if os.path.commonpath([root, absolute]) == root:
-            return os.path.relpath(absolute, root)
-        return os.path.basename(path)
-    if path == os.pardir or path.startswith(os.pardir + os.sep):
-        return os.path.basename(path)
-    return path
+    """Path beneath the course's git root, without allowing uploads
+    outside that root. The root is config.git_root(), not os.getcwd():
+    a file command run from inside a nested module directory -- or
+    dispatched there by the build's own per-module fan-out -- must
+    still resolve to its true place in the whole course tree, rather
+    than treating that module directory as its own root (which is how
+    two modules sharing a same-shaped subpath used to collide in
+    Canvas). A path outside the root, or with no root at all, retains
+    the old basename-only behaviour."""
+    absolute = os.path.abspath(os.fspath(filename))
+    root = config.git_root() or os.path.abspath(os.getcwd())
+    if os.path.commonpath([root, absolute]) != root:
+        return os.path.basename(os.path.normpath(filename))
+    return os.path.relpath(absolute, root)
 
 
 def __canvas_folder_path(filename):
