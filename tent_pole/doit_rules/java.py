@@ -1,10 +1,9 @@
 import glob
-import io
 import os
 import subprocess
 import tempfile
 
-from panflute import CodeBlock, load
+from panflute import CodeBlock
 
 from .. import include_deps_filter
 from ..code_include_attrs import CodeIncludeAttrs
@@ -113,13 +112,7 @@ def _java_failure_targets():
     for markdown in glob.glob("*.md"):
         if markdown.endswith(".quiz.md"):
             continue
-        result = subprocess.run(
-            ["pandoc", "-t", "json", markdown],
-            capture_output=True,
-            check=True,
-            text=True,
-        )
-        load(io.StringIO(result.stdout)).walk(visit)
+        include_deps_filter.load_pandoc_ast(markdown).walk(visit)
     return targets
 
 

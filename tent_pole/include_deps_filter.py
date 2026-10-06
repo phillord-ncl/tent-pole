@@ -95,18 +95,26 @@ def collect_deps(doc):
     return list(dict.fromkeys(html_deps)), list(dict.fromkeys(full_deps))
 
 
-def parse(source):
-    """(html_deps, full_deps) for `source` -- runs pandoc, parses the
-    resulting AST, and returns collect_deps()'s own lists directly.
-    Shared by generate() (the Makefile-text tool) and the doit rules
-    (tent_pole/doit_rules), which want the lists themselves rather than
-    a rendered dependency line."""
+def load_pandoc_ast(source):
+    """Parse `source` through pandoc -t json and load the resulting
+    AST -- the shared first half of parse() below, also reused
+    directly by any caller that needs to walk a document's own AST
+    rather than just the dependency list parse() derives from it (e.g.
+    doit_rules/java.py's Java-failure-attribute scan)."""
     result = subprocess.run(
         ["pandoc", "-t", "json", source],
         capture_output=True, check=True, text=True,
     )
-    doc = load(io.StringIO(result.stdout))
-    return collect_deps(doc)
+    return load(io.StringIO(result.stdout))
+
+
+def parse(source):
+    """(html_deps, full_deps) for `source` -- parses it via
+    load_pandoc_ast() and returns collect_deps()'s own lists directly.
+    Shared by generate() (the Makefile-text tool) and the doit rules
+    (tent_pole/doit_rules), which want the lists themselves rather than
+    a rendered dependency line."""
+    return collect_deps(load_pandoc_ast(source))
 
 
 def generate(source):
