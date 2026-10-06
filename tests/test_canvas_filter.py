@@ -104,6 +104,27 @@ def test_code_filter_crash_appends_traceback(tmp_path):
     assert "ZeroDivisionError\n" in texts
 
 
+def test_code_filter_compile_fail_appends_compiler_diagnostic(tmp_path):
+    source = tmp_path / "HelloWorld.java"
+    source.write_text("public class HelloWorld {}")
+    write_tpf(source, {"id": 42})
+    (tmp_path / "HelloWorld.crash").write_text("';' expected\n")
+
+    elem = pf.CodeBlock(
+        "", classes=["java"],
+        attributes={"include": str(source), "compile-fail": "true"},
+    )
+    result = canvas_filter.code_filter(elem, doc=None)
+
+    texts = [getattr(b, "text", None) for b in result]
+    assert "Crashes:" in [
+        getattr(b.content[0], "text", None)
+        for b in result
+        if hasattr(b, "content")
+    ]
+    assert "';' expected\n" in texts
+
+
 def test_code_filter_chunk_shows_only_the_named_chunk(tmp_path):
     source = tmp_path / "demo.R"
     source.write_text("#+ setup\nx <- 1\n#+ summary\ncat(x)\n")

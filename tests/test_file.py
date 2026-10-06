@@ -6,13 +6,14 @@ from tent_pole import file as tp_file
 
 class FakeCanvasFile:
     def __init__(self, filename, size=100, content=b"file content",
-                 uuid="uuid-1", id=1, media_entry_id=None):
+                 uuid="uuid-1", id=1, media_entry_id=None, folder_id=1):
         self.filename = filename
         self.size = size
         self._content = content
         self.uuid = uuid
         self.id = id
         self.media_entry_id = media_entry_id
+        self.folder_id = folder_id
         self.__dict__["content-type"] = "text/plain"
 
     def get_contents(self, binary=False):
@@ -20,18 +21,33 @@ class FakeCanvasFile:
 
 
 class FakeCourseForFile:
-    def __init__(self, files):
+    def __init__(self, files, folders=None):
         self.id = 999
         self._files = files
         self.upload_calls = []
+        self._folders = (
+            folders
+            if folders is not None
+            else [FakeCanvasFolder("tent-pole", 1, "course files/tent-pole")]
+        )
 
     def get_files(self):
         return self._files
+
+    def get_folders(self):
+        return self._folders
 
     def upload(self, filename, **kwargs):
         self.upload_calls.append((filename, kwargs))
         return True, {}
 
+
+class FakeCanvasFolder:
+    def __init__(self, name, id, full_name, parent_folder_id=None):
+        self.name = name
+        self.id = id
+        self.full_name = full_name
+        self.parent_folder_id = parent_folder_id
 
 class SlowlyResolvingCourse:
     """A course whose one file's media_entry_id starts as "maybe" (as
@@ -44,6 +60,12 @@ class SlowlyResolvingCourse:
         self.filename = filename
         self.calls = 0
         self.resolves_after = resolves_after
+        self._folders = [
+            FakeCanvasFolder("tent-pole", 1, "course files/tent-pole")
+        ]
+
+    def get_folders(self):
+        return self._folders
 
     def get_files(self):
         self.calls += 1
@@ -52,6 +74,7 @@ class SlowlyResolvingCourse:
 
 
 def write_local_file(path, content=b"file content"):
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(content)
     return str(path)
 
@@ -65,6 +88,7 @@ def test_data_includes_hash_and_size(tmp_path):
 
     assert data["hash"] == tp_file.manifest.hash_file(local)
     assert data["size"] == len(b"file content")
+    assert data["folder_id"] == 1
 
 
 def test_local_drift_none_when_unchanged(tmp_path):
@@ -175,6 +199,62 @@ def test_push_uploads_into_the_tent_pole_folder(tmp_path, monkeypatch):
         "on_duplicate": "overwrite",
     }
     assert tp_file.TENT_POLE_FOLDER == "tent-pole"
+
+
+def test_push_preserves_nested_course_path(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    local = write_local_file(
+        tmp_path / "01-first-version" / "HelloWorld.java",
+        b"class HelloWorld {}",
+    )
+    fake_course = FakeCourseForFile([])
+    monkeypatch.setattr(tp_file.course, "course_obj", lambda: fake_course)
+
+    result = CliRunner().invoke(
+        tp_file.file, ["push", "01-first-version/HelloWorld.java"]
+    )
+
+    assert result.exit_code == 0, result.output
+    assert fake_course.upload_calls == [
+        (
+            "01-first-version/HelloWorld.java",
+            {
+                "parent_folder_path": "tent-pole/01-first-version",
+                "on_duplicate": "overwrite",
+            },
+        )
+    ]
+
+
+def test_file_lookup_disambiguates_same_filename_by_folder(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    first_local = write_local_file(
+        tmp_path / "01-first-version" / "HelloWorld.java"
+    )
+    second_local = write_local_file(
+        tmp_path / "02-personal-greeting" / "HelloWorld.java"
+    )
+    first = FakeCanvasFolder(
+        "01-first-version", 2,
+        "course files/tent-pole/01-first-version", 1
+    )
+    second = FakeCanvasFolder(
+        "02-personal-greeting", 3,
+        "course files/tent-pole/02-personal-greeting", 1
+    )
+    root = FakeCanvasFolder("tent-pole", 1, "course files/tent-pole")
+    course = FakeCourseForFile(
+        [
+            FakeCanvasFile("HelloWorld.java", id=20, folder_id=2),
+            FakeCanvasFile("HelloWorld.java", id=30, folder_id=3),
+        ],
+        folders=[root, first, second],
+    )
+
+    assert tp_file.__find_file("01-first-version/HelloWorld.java", course).id == 20
+    assert tp_file.__find_file("02-personal-greeting/HelloWorld.java", course).id == 30
+    assert tp_file.__data(first_local, course)["id"] == 20
+    assert tp_file.__data(second_local, course)["id"] == 30
 
 
 def test_dump_without_wait_does_not_poll(tmp_path, monkeypatch):

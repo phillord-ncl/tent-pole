@@ -8,30 +8,77 @@ from . import manifest
 
 ## Fixed, not configurable -- every file tent-pole uploads lands here,
 ## rather than Canvas's generic default "unfiled" folder, so "did
-## tent-pole manage this" becomes a cheap folder_id check. Must only ever
-## be passed as upload()'s parent_folder_path -- never via a separate
-## create_folder() call, which resolves relative to a different parent
-## ("unfiled" rather than the course root) and creates a second,
-## inconsistent folder of the same name.
+## tent-pole manage this" remains a cheap folder_id check. Local
+## subdirectories are recreated beneath this managed root.
 TENT_POLE_FOLDER = "tent-pole"
 
 def __canvasfilename_from_path(path):
     return os.path.basename(path)
 
-def __find_file(filename, course):
-    filename =__canvasfilename_from_path(filename)
+
+def __course_relative_path(filename):
+    """Path beneath the current course root, without allowing uploads
+    outside that root. Absolute paths inside the working directory keep
+    their relative structure; external paths retain the old basename-only
+    behavior."""
+    path = os.path.normpath(os.fspath(filename))
+    if os.path.isabs(path):
+        root = os.path.abspath(os.getcwd())
+        absolute = os.path.abspath(path)
+        if os.path.commonpath([root, absolute]) == root:
+            return os.path.relpath(absolute, root)
+        return os.path.basename(path)
+    if path == os.pardir or path.startswith(os.pardir + os.sep):
+        return os.path.basename(path)
+    return path
+
+
+def __canvas_folder_path(filename):
+    relative = __course_relative_path(filename)
+    parent = os.path.dirname(relative)
+    parts = [TENT_POLE_FOLDER]
+    if parent:
+        parts.extend(parent.split(os.sep))
+    return "course files/" + "/".join(parts)
+
+
+def __parent_folder_path(filename):
+    """Canvas upload path beneath the course root."""
+    return __canvas_folder_path(filename).removeprefix("course files/")
+
+
+def __folder_for_path(filename, course):
+    """Find the Canvas folder for a local course-relative path."""
+    full_path = __canvas_folder_path(filename)
+    folders = {folder.full_name: folder for folder in course.get_folders()}
+    return folders.get(full_path)
+
+
+def __find_file(filename, course, folder_id=None):
+    local_path = filename
+    filename = __canvasfilename_from_path(local_path)
+    if folder_id is None:
+        folder = __folder_for_path(local_path, course)
+        if folder is None:
+            return None
+        folder_id = folder.id
     for f in course.get_files():
-        if f.filename == filename:
+        if f.filename == filename and f.folder_id == folder_id:
             return f
 
 def __data(filename, course):
     canvasfile = __find_file(filename,course)
+    if canvasfile is None:
+        raise click.ClickException(
+            "File {} not found in its managed Canvas folder".format(filename)
+        )
     return {
         "hash": manifest.hash_file(filename),
         "size": canvasfile.size,
         "content-type": canvasfile.__dict__["content-type"],
         "id": canvasfile.id,
         "course": course.id,
+        "folder_id": canvasfile.folder_id,
         "filename": canvasfile.filename,
         "media_entry_id": canvasfile.media_entry_id
     }
@@ -57,7 +104,7 @@ def __local_drift(filename, recorded):
     return None
 
 def __remote_drift(filename, recorded, courseobj, deep=False):
-    canvasfile = __find_file(filename, courseobj)
+    canvasfile = __find_file(filename, courseobj, recorded.get("folder_id"))
     if canvasfile is None:
         return "file no longer found on Canvas"
 
@@ -110,11 +157,13 @@ def push(filename):
     ## file untouched and creating a second, differently-named copy
     ## instead -- confirmed against a real course, not assumed.
     ## Overwriting is always correct here specifically because every
-    ## push is scoped to TENT_POLE_FOLDER: a same-named collision
-    ## there is never an unrelated file, it's this exact file's own
-    ## previous push.
-    course.course_obj().upload(
-        filename, parent_folder_path=TENT_POLE_FOLDER, on_duplicate="overwrite"
+    ## push is scoped to the managed folder for this local path: a
+    ## same-named collision there is this file's own previous push.
+    courseobj = course.course_obj()
+    courseobj.upload(
+        filename,
+        parent_folder_path=__parent_folder_path(filename),
+        on_duplicate="overwrite",
     )
 
 @file.command(help="Check whether the local file has changed since it was "

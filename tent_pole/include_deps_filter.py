@@ -68,7 +68,7 @@ def collect_deps(doc):
             if attrs.stout:
                 html_deps.append(attrs.stout_path)
                 full_deps.append(attrs.stout_path)
-            if attrs.crash:
+            if attrs.crash or attrs.compile_fail:
                 html_deps.append(attrs.crash_path)
                 full_deps.append(attrs.crash_path)
             if attrs.plot:

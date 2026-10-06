@@ -74,6 +74,19 @@ def test_collect_deps_output_needs_only_raw_for_both():
     assert not any(d.endswith(".out.tpf") for d in html_deps)
 
 
+def test_collect_deps_compile_fail_needs_crash_artifact_for_both():
+    elem = pf.CodeBlock(
+        "", classes=["java"],
+        attributes={"include": "example/HelloWorld.java", "compile-fail": "true"},
+    )
+    doc = make_doc(elem)
+
+    html_deps, full_deps = deps_filter.collect_deps(doc)
+
+    assert "example/HelloWorld.crash" in html_deps
+    assert "example/HelloWorld.crash" in full_deps
+
+
 def test_collect_deps_plot_needs_tpf_for_html_and_raw_for_full():
     """plot= uses the Image dependency shape, not the plain-file shape
     output=/stout=/crash= use -- a plot is pushed/embedded as a real

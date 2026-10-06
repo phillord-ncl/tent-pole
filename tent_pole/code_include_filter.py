@@ -36,7 +36,7 @@ def code_filter(elem, doc):
             blocks.append(Para(Str("Prints:")))
             blocks.append(CodeBlock(fh.read()))
 
-    if attrs.crash and not attrs.hide_crash:
+    if (attrs.crash or attrs.compile_fail) and not attrs.hide_crash:
         with open(attrs.crash_path) as fh:
             blocks.append(Para(Str("Crashes:")))
             blocks.append(CodeBlock(fh.read()))

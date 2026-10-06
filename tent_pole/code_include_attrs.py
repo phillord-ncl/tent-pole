@@ -5,23 +5,24 @@ from typing import Optional
 
 @dataclass(frozen=True)
 class CodeIncludeAttrs:
-    """The include=/output=/stout=/crash=/hide_crash= attributes on a
-    CodeBlock, shared by canvas_filter, code_include_filter, and
-    include_deps_filter -- all three need the same parsing and the
-    same derived .out/.stout/.crash path shape.
+    """The include=/output=/stout=/crash=/compile-fail=/hide_crash=
+    attributes on a CodeBlock, shared by canvas_filter,
+    code_include_filter, and include_deps_filter -- all three need the
+    same parsing and the same derived .out/.stout/.crash path shape.
 
-    crash= and hide_crash= are deliberately separate: crash= means
-    "this program is expected to crash, build its .crash artifact
-    rather than treating a non-zero exit as a build failure" -- a
-    build-level declaration that a real "will this code crash?" quiz
-    question still needs, but rendering the traceback right there in
-    the question answers it for free (tent-pole issue #14 review).
-    hide_crash= controls only whether code_filter renders that
-    traceback; it does nothing without crash= also being set."""
+    crash= and compile-fail= are deliberately separate: crash= means
+    "this program is expected to crash at runtime, build its .crash
+    artifact rather than treating a non-zero exit as a build failure";
+    compile-fail= means "this Java source is expected to fail
+    compilation, capture the compiler diagnostic instead of treating it
+    as a runtime crash." hide_crash= controls only whether code_filter
+    renders that traceback; it does nothing without crash= or
+    compile-fail= being set."""
     include: Optional[str]
     output: bool
     stout: bool
     crash: bool
+    compile_fail: bool
     hide_crash: bool
     chunk: Optional[str] = None
     plot: Optional[int] = None
@@ -33,6 +34,10 @@ class CodeIncludeAttrs:
             output=bool(elem.attributes.get("output")),
             stout=bool(elem.attributes.get("stout")),
             crash=bool(elem.attributes.get("crash")),
+            compile_fail=bool(
+                elem.attributes.get("compile-fail")
+                or elem.attributes.get("compile_fail")
+            ),
             hide_crash=bool(elem.attributes.get("hide_crash")),
             chunk=elem.attributes.get("chunk"),
             plot=cls._parse_plot(elem.attributes.get("plot")),
@@ -76,6 +81,10 @@ class CodeIncludeAttrs:
         return self.chunk_stem + ".crash"
 
     @property
+    def compile_fail_path(self):
+        return self.crash_path
+
+    @property
     def plot_path(self):
         """<stem>_<chunk>-<n>.png -- only meaningful when plot= is set."""
         return self.chunk_stem + "-" + str(self.plot) + ".png"
@@ -87,7 +96,7 @@ class CodeIncludeAttrs:
             paths.append(self.output_path)
         if self.stout:
             paths.append(self.stout_path)
-        if self.crash:
+        if self.crash or self.compile_fail:
             paths.append(self.crash_path)
         if self.plot:
             paths.append(self.plot_path)

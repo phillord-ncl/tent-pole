@@ -79,6 +79,21 @@ def test_crash_attribute_appends_captured_traceback(tmp_path):
     assert result[2].text == "ZeroDivisionError\n"
 
 
+def test_compile_fail_attribute_appends_compiler_diagnostic(tmp_path):
+    source = tmp_path / "HelloWorld.java"
+    source.write_text("public class HelloWorld {}")
+    (tmp_path / "HelloWorld.crash").write_text("';' expected\n")
+
+    elem = pf.CodeBlock(
+        "", classes=["java"],
+        attributes={"include": str(source), "compile-fail": "true"},
+    )
+    result = code_include_filter.code_filter(elem, doc=None)
+
+    assert result[1].content[0].text == "Crashes:"
+    assert result[2].text == "';' expected\n"
+
+
 def test_hide_crash_suppresses_traceback_but_keeps_crash_declared(tmp_path):
     """crash= and hide_crash= are separate: crash= alone still means
     "this program is expected to crash" (a real "will this code
