@@ -105,7 +105,20 @@ def __local_drift(filename, recorded):
     return None
 
 def __remote_drift(filename, recorded, courseobj, deep=False):
-    canvasfile = __find_file(filename, courseobj, recorded.get("folder_id"))
+    if "folder_id" in recorded:
+        canvasfile = __find_file(filename, courseobj, recorded["folder_id"])
+    else:
+        ## Recorded before per-path Canvas folders existed, when every
+        ## push landed in the single flat TENT_POLE_FOLDER and a file
+        ## was matched by name alone, with no folder concept at all --
+        ## keep matching the same way for these, rather than
+        ## recomputing (and failing to find) a nested path that never
+        ## applied to them.
+        filename_only = __canvasfilename_from_path(filename)
+        canvasfile = next(
+            (f for f in courseobj.get_files() if f.filename == filename_only),
+            None,
+        )
     if canvasfile is None:
         return "file no longer found on Canvas"
 

@@ -158,6 +158,23 @@ def test_remote_drift_deep_detects_content_mismatch(tmp_path):
     assert tp_file.__remote_drift(local, recorded, fake_course, deep=True) is not None
 
 
+def test_remote_drift_finds_a_legacy_file_without_folder_id_in_a_nested_path(
+    tmp_path, monkeypatch
+):
+    """A .tpf recorded before per-path Canvas folders existed has no
+    folder_id key at all. Its file was pushed flat into the single
+    TENT_POLE_FOLDER, so matching it must stay name-based rather than
+    recomputing a nested folder path it was never actually uploaded
+    to, which this local nested path would otherwise do."""
+    monkeypatch.chdir(tmp_path)
+    local = write_local_file(tmp_path / "subdir" / "foo.txt")
+    canvas_file = FakeCanvasFile("foo.txt", size=100, folder_id=1)
+    fake_course = FakeCourseForFile([canvas_file])  # only the root folder exists
+    recorded = {"size": 100}  # predates folder_id
+
+    assert tp_file.__remote_drift(local, recorded, fake_course) is None
+
+
 def test_remote_drift_not_deep_ignores_content_mismatch_if_size_matches(tmp_path):
     """--deep is opt-in: without it, a size-only match should pass even
     if content secretly differs (that's the whole cheap/thorough tradeoff)."""
