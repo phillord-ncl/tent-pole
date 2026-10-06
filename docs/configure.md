@@ -39,11 +39,13 @@ tent-pole config course
 numeric id, a course code, or a name:
 
 ```
-tent-pole -c=23212 page push ./page.html
+tent-pole -c 23212 page push ./page.html
 ```
 
-Use the `-c=VALUE` form (or `--course=VALUE`) -- a space-separated `-c
-VALUE` is currently mis-parsed.
+Use `-c VALUE`, `--course VALUE`, or `--course=VALUE` -- the short
+`-c=VALUE` form is mis-parsed (Click hands the option's own `=` through
+as part of the value for a short option, so it ends up stored as
+`"=23212"`).
 
 ## Point at a sandbox instead of the real course
 

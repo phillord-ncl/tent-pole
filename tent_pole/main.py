@@ -39,7 +39,7 @@ def main(course, beta):
         os.environ["TENT_POLE_USE_TEST_CONFIG"] = "1"
     if course:
         dpath.new(config.CONFIG, "course/identifier", "temp")
-        dpath.set(config.CONFIG, "course/identifier", course[1:])
+        dpath.set(config.CONFIG, "course/identifier", course)
 
 @main.command(name="pkg-dir", help="Print the path to tent-pole's "
               "installed package directory, e.g. for a downstream "

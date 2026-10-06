@@ -30,6 +30,23 @@ def test_without_beta_flag_uses_general_config(monkeypatch):
     assert "prod-key" in result.output
 
 
+def test_course_option_stores_the_value_verbatim(monkeypatch):
+    """--course/-c previously sliced off the value's first character
+    (course[1:]) before storing it -- confirm the stored identifier
+    now matches exactly what was passed, for every invocation form
+    Click hands a clean value for."""
+    monkeypatch.delenv("TENT_POLE_USE_TEST_CONFIG", raising=False)
+    monkeypatch.setattr(config, "CONFIG", {})
+    for args in (
+        ["--course", "12345"],
+        ["--course=12345"],
+        ["-c", "12345"],
+    ):
+        result = CliRunner().invoke(main, args + ["config", "course"])
+        assert result.exit_code == 0, result.output
+        assert result.output.strip() == "12345"
+
+
 def test_pkg_dir_prints_the_installed_package_directory():
     """What a downstream Makefile calls to find the shipped
     make-rules/ and bin/ -- must match where tent_pole itself actually
