@@ -30,3 +30,11 @@ lesson, rather than presenting it as an unexpected runtime crash.
 
 ```{.java include=03-compile-fail/HelloWorld.java compile-fail=true}
 ```
+
+## 4. Read a runtime error
+
+This program compiles, but throws an exception when it runs. Mark the
+runtime failure as expected so its stack trace is shown as lesson output.
+
+```{.java include=04-runtime-crash/HelloWorld.java crash=true}
+```

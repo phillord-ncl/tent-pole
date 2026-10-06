@@ -61,7 +61,9 @@ def test_task_html_one_subtask_per_non_quiz_md(course_dir):
     task = tasks["foo.html"]
     assert task["targets"] == ["foo.html"]
     assert "foo.md" in task["file_dep"]
-    assert task["actions"] == [["pandoc", "--filter=canvas-filter", "foo.md", "-o", "foo.html"]]
+    assert task["actions"] == [[
+        "pandoc", "--filter=" + core.CANVAS_FILTER, "foo.md", "-o", "foo.html"
+    ]]
 
 
 def test_task_full_html_excludes_quiz_md(course_dir):

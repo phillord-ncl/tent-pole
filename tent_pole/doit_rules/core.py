@@ -34,8 +34,13 @@ from .. import include_deps_filter
 ## invocation is already resolved to a full path by the shell before
 ## Python ever sees it.
 TENT_POLE = os.environ.get("TENT_POLE") or sys.argv[0]
-CANVAS_FILTER = os.environ.get("CANVAS_FILTER", "canvas-filter")
-CODE_INCLUDE_FILTER = os.environ.get("CODE_INCLUDE_FILTER", "code-include-filter")
+_SCRIPT_DIR = os.path.dirname(sys.executable)
+CANVAS_FILTER = os.environ.get(
+    "CANVAS_FILTER", os.path.join(_SCRIPT_DIR, "canvas-filter")
+)
+CODE_INCLUDE_FILTER = os.environ.get(
+    "CODE_INCLUDE_FILTER", os.path.join(_SCRIPT_DIR, "code-include-filter")
+)
 
 
 def _md_sources():
