@@ -143,21 +143,41 @@ LINTERS = {
     "unreferenced": unreferenced,
 }
 
+## "build": only name-collision needs no prior push state at all, so
+## it's the one linter a single invocation at the course root can run
+## correctly before anything has ever been pushed -- stamp-collision
+## only has anything to say about a page/file that's already been
+## pushed at least once, and unreferenced is an authoring-hygiene lint,
+## not a collision gate.
+ALIASES = {
+    "all": tuple(sorted(LINTERS)),
+    "build": ("name-collision",),
+}
+
+
+def _resolve(names):
+    resolved = []
+    for name in names:
+        resolved.extend(ALIASES.get(name, (name,)))
+    return list(dict.fromkeys(resolved))
+
 
 @click.command(help="Run static checks for common authoring mistakes: "
                      "page/file name collisions (name-collision, "
                      "stamp-collision) and pages missing from their own "
-                     "module's item list (unreferenced). Always run from "
-                     "the course root -- these walk the whole tree, not "
-                     "just the current directory.")
+                     "module's item list (unreferenced). 'all' runs every "
+                     "linter; 'build' runs the subset safe to wire into a "
+                     "build (currently just name-collision). Always run "
+                     "from the course root -- these walk the whole tree, "
+                     "not just the current directory.")
 @click.argument("linters", nargs=-1, required=True,
-                 type=click.Choice(sorted(LINTERS)))
+                 type=click.Choice(sorted(LINTERS) + sorted(ALIASES)))
 @click.option("--strict", is_flag=True, help="Exit non-zero if any "
               "linter reports a finding, instead of just printing them.")
 def check(linters, strict):
     findings = [
         "[{}] {}".format(name, finding)
-        for name in linters
+        for name in _resolve(linters)
         for finding in LINTERS[name](".")
     ]
 

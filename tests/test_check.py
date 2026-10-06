@@ -223,3 +223,37 @@ def test_check_cli_runs_multiple_linters(tmp_path, monkeypatch):
     assert result.exit_code == 0, result.output
     assert "[name-collision]" in result.output
     assert "[unreferenced]" in result.output
+
+
+def test_check_cli_all_alias_runs_every_linter(tmp_path, monkeypatch):
+    wk1 = write_module(tmp_path, "wk1", "Week 1", items=[{"id": "intro"}])
+    wk2 = write_module(tmp_path, "wk2", "Week 2")
+    (wk1 / "intro.md").write_text("# Intro\n")
+    (wk1 / "orphan.md").write_text("# Orphan\n")
+    (wk1 / "exercises.md").write_text("# Exercises\n")
+    (wk2 / "exercises.md").write_text("# Exercises\n")
+    (wk1 / "exercises.tpp").write_text(toml.dumps({"url": "exercises"}))
+    (wk2 / "exercises.tpp").write_text(toml.dumps({"url": "exercises"}))
+    monkeypatch.chdir(tmp_path)
+
+    result = CliRunner().invoke(check.check, ["all"])
+
+    assert result.exit_code == 0, result.output
+    assert "[name-collision]" in result.output
+    assert "[stamp-collision]" in result.output
+    assert "[unreferenced]" in result.output
+
+
+def test_check_cli_build_alias_runs_only_name_collision(tmp_path, monkeypatch):
+    wk1 = write_module(tmp_path, "wk1", "Week 1")
+    wk2 = write_module(tmp_path, "wk2", "Week 2")
+    (wk1 / "exercises.md").write_text("# Exercises\n")
+    (wk2 / "exercises.md").write_text("# Exercises\n")
+    monkeypatch.chdir(tmp_path)
+
+    result = CliRunner().invoke(check.check, ["build"])
+
+    assert result.exit_code == 0, result.output
+    assert "[name-collision]" in result.output
+    assert "[stamp-collision]" not in result.output
+    assert "[unreferenced]" not in result.output
