@@ -39,6 +39,18 @@ def test_plot_false_is_the_same_as_absent():
     assert attrs.plot is None
 
 
+def test_compile_fail_false_behaves_as_absent():
+    attrs = _attrs(include="demo.java", **{"compile-fail": "false"})
+
+    assert attrs.compile_fail is False
+
+
+def test_crash_false_behaves_as_absent():
+    attrs = _attrs(include="demo.py", crash="false")
+
+    assert attrs.crash is False
+
+
 def test_chunk_is_passed_through_verbatim():
     attrs = _attrs(include="demo.R", chunk="setup")
 

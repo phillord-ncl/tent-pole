@@ -31,17 +31,25 @@ class CodeIncludeAttrs:
     def from_element(cls, elem):
         return cls(
             include=elem.attributes.get("include"),
-            output=bool(elem.attributes.get("output")),
-            stout=bool(elem.attributes.get("stout")),
-            crash=bool(elem.attributes.get("crash")),
-            compile_fail=bool(
+            output=cls._parse_bool(elem.attributes.get("output")),
+            stout=cls._parse_bool(elem.attributes.get("stout")),
+            crash=cls._parse_bool(elem.attributes.get("crash")),
+            compile_fail=cls._parse_bool(
                 elem.attributes.get("compile-fail")
                 or elem.attributes.get("compile_fail")
             ),
-            hide_crash=bool(elem.attributes.get("hide_crash")),
+            hide_crash=cls._parse_bool(elem.attributes.get("hide_crash")),
             chunk=elem.attributes.get("chunk"),
             plot=cls._parse_plot(elem.attributes.get("plot")),
         )
+
+    @staticmethod
+    def _parse_bool(raw):
+        """True for any set value except the literal string "false"
+        (case-insensitive) -- matches _parse_plot's own false-means-
+        absent handling, so e.g. compile-fail=false behaves as "not
+        set" rather than, via a bare bool(str), always true."""
+        return bool(raw) and str(raw).lower() != "false"
 
     @staticmethod
     def _parse_plot(raw):
