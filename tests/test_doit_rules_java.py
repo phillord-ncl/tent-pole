@@ -108,6 +108,32 @@ def test_task_crash_captures_a_runtime_exception(course_dir):
     assert list((course_dir / "04-runtime-crash").glob("*.class")) == []
 
 
+def test_crash_true_rejects_a_source_that_fails_to_compile(course_dir):
+    """crash=true means the program is expected to fail at runtime --
+    a source that does not even compile is a different, unintended
+    failure mode and must not be silently captured as the expected
+    crash."""
+    source = course_dir / "06-not-a-runtime-crash" / "HelloWorld.java"
+    _write(
+        source,
+        "public class HelloWorld {"
+        " public static void main(String[] args) {"
+        ' String student = "Ada"'
+        ' System.out.println(student);'
+        " }"
+        "}",
+    )
+    _write(
+        course_dir / "page.md",
+        "```{.java include=06-not-a-runtime-crash/HelloWorld.java crash=true}\n```\n",
+    )
+
+    (task,) = list(java_rules.task_java_crash())
+    action, args = task["actions"][0]
+    with pytest.raises(RuntimeError, match="failed to compile"):
+        action(*args)
+
+
 def test_compile_fail_rejects_a_source_that_compiles(course_dir):
     source = course_dir / "05-not-a-compile-failure" / "HelloWorld.java"
     _write(

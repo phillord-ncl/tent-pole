@@ -71,7 +71,11 @@ def _run_java_failure(source, target, compile_fail):
                     )
                 return
             if compile_result.returncode != 0:
-                return
+                os.remove(target_abs)
+                raise RuntimeError(
+                    "Expected {} to compile and crash at runtime, but it "
+                    "failed to compile instead".format(source)
+                )
             run_result = subprocess.run(
                 ["java", "-cp", class_dir, class_name],
                 cwd=source_dir,
