@@ -1,0 +1,126 @@
+# One *.rubric.toml describes one Canvas assignment plus the rubric used
+# to mark it. tent-pole pushes both halves together: the assignment, and
+# a rubric associated with it for grading.
+
+
+[assignment]
+
+title = "Exercise 2: Loops and Lists"
+
+# Path to a page (same convention as a normal tent-pole page) rendered
+# through canvas-filter and used as the assignment's own description.
+description = "assignment-description.md"
+
+# Should equal the sum of every [[criteria]] "points" value below --
+# that's what the student sees as the assignment's total.
+points_possible = 20
+
+submission_types = ["online_upload"]
+
+# Stay unpublished until the assignment and rubric are checked on Canvas.
+published = false
+
+
+# Settings for the rubric itself, as opposed to the assignment it grades.
+# Optional -- everything here has a default if omitted.
+[rubric]
+
+# Lets a marker type free text against a criterion instead of only
+# picking one of its predefined ratings below.
+free_form_criterion_comments = true
+
+
+# Each [[criteria]] block is one row of the rubric. "id" is a stable
+# identifier (not shown to students) -- keep it the same across edits so
+# a later re-push updates this row rather than creating a new one.
+[[criteria]]
+
+id = "correctness"
+
+description = "Correctness"
+
+# Longer guidance for the marker; "description" above is just the row's
+# short label.
+long_description = """
+Code produces the correct output for every example in the brief,
+including the edge cases listed under 'Things to check'.
+"""
+
+# This criterion's share of the assignment's total points.
+points = 10
+
+# Each [[criteria.ratings]] block is one performance level a marker can
+# pick for this criterion -- ordered high to low points by convention,
+# though Canvas doesn't require that.
+[[criteria.ratings]]
+id = "full"
+description = "Fully correct (all cases handled)"
+points = 10
+
+[[criteria.ratings]]
+id = "partial"
+description = "Mostly correct, minor edge-case failures"
+points = 6
+
+[[criteria.ratings]]
+id = "none"
+description = "Does not run, or wrong output throughout"
+points = 0
+
+
+[[criteria]]
+
+id = "style"
+
+description = "Style and readability"
+
+long_description = """
+Variable names are meaningful, loops avoid needless nesting, no
+duplicated logic.
+"""
+
+points = 6
+
+[[criteria.ratings]]
+id = "full"
+description = "Clear and idiomatic throughout"
+points = 6
+
+[[criteria.ratings]]
+id = "partial"
+description = "Readable but with some repetition or unclear names"
+points = 3
+
+[[criteria.ratings]]
+id = "none"
+description = "Hard to follow"
+points = 0
+
+
+[[criteria]]
+
+id = "comments"
+
+description = "Comments and documentation"
+
+long_description = """
+A short docstring or comment explains what each function does and
+why, not just what the code says.
+"""
+
+points = 4
+
+[[criteria.ratings]]
+id = "full"
+description = "Present and useful throughout"
+points = 4
+
+[[criteria.ratings]]
+id = "partial"
+description = "Present but sparse, or just restates the code"
+points = 2
+
+[[criteria.ratings]]
+id = "none"
+description = "Missing"
+points = 0

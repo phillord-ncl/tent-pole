@@ -12,6 +12,7 @@ items = [
   {id="intro"},
   {id="exercises", indent=1},
   {id="quiz-1.quiz.md", type="Quiz"},
+  {id="exercise-2.rubric.toml", type="Assignment"},
 ]
 ```
 
@@ -38,6 +39,14 @@ repeatedly -- with [start a new project](new-project.md)'s
   explicitly. The quiz must already have been pushed at least once
   (`tent-pole quiz push`) -- `reorder` resolves it via the quiz's own
   `.tpq` stamp file and refuses to guess at an unpushed quiz's id.
+- An assignment item's `id` is the `.rubric.toml` filename, and needs
+  `type="Assignment"` explicitly. Same requirement as a quiz: it must
+  already have been pushed at least once (`tent-pole rubric push`),
+  resolved via its own `.tpa` stamp file (see
+  [write an assessment](write-an-assessment.md)). Worth doing even for
+  an assignment that's published: on a course where the Assignments
+  tab itself is hidden from students, a module item may be the only
+  way they can reach it at all.
 - `indent` (0 by default) nests an item under the previous one visually.
 
 There's no sub-header entry type in `items` yet -- use

@@ -23,6 +23,8 @@ import os
 import subprocess
 import sys
 
+import toml
+
 from .. import include_deps_filter
 
 ## Not a hardcoded "tent-pole": subprocess actions below (fan-out,
@@ -67,6 +69,10 @@ def _md_sources():
 
 def _quiz_sources():
     return glob.glob("*.quiz.md")
+
+
+def _rubric_sources():
+    return glob.glob("*.rubric.toml")
 
 
 def task_html():
@@ -153,6 +159,29 @@ def task_quiz_push():
             "actions": [[TENT_POLE, "quiz", "push", qmd]],
             "file_dep": [qmd],
             "targets": [tpq],
+            "clean": True,
+        }
+
+
+def task_rubric_push():
+    """%.tpa: %.rubric.toml -- assignment+rubric push. file_dep also
+    covers the assignment description's own .html (built by task_html
+    from its .md), so a change to that page triggers a re-push even if
+    the .rubric.toml itself is untouched. Not exposed as a top-level
+    goal itself -- see doit_rules/__init__.py's task_rubrics."""
+    for rtoml in _rubric_sources():
+        tpa = rtoml[: -len(".rubric.toml")] + ".tpa"
+        with open(rtoml) as fh:
+            parsed = toml.load(fh)
+        file_dep = [rtoml]
+        description = parsed.get("assignment", {}).get("description")
+        if description:
+            file_dep.append(os.path.splitext(description)[0] + ".html")
+        yield {
+            "name": tpa,
+            "actions": [[TENT_POLE, "rubric", "push", rtoml]],
+            "file_dep": file_dep,
+            "targets": [tpa],
             "clean": True,
         }
 

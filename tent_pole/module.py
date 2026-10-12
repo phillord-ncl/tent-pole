@@ -7,6 +7,7 @@ from . import course
 from . import manifest
 from . import page
 from . import quiz
+from . import rubric
 
 def module_by_name(modulename):
     try:
@@ -81,6 +82,23 @@ def __desired_module_item(item, position, courseobj):
             "type": "Quiz", "content_id": content_id,
             "indent": indent, "position": position,
         }
+    if itemtype == "Assignment":
+        ## item["id"] is a .rubric.toml filename, resolved via its
+        ## .tpa (rubric push's own stamp file) -- same reasoning as
+        ## Quiz above: no lookup-by-title here, reorder should never
+        ## implicitly create an assignment.
+        recorded = rubric.__load_tpa(item["id"])
+        if recorded is None:
+            raise click.ClickException(
+                "No {} found for {!r} -- run rubric push first".format(
+                    rubric.__tpa_path(item["id"]), item["id"]
+                )
+            )
+        content_id = recorded["assignment_id"]
+        return ("Assignment", content_id), {
+            "type": "Assignment", "content_id": content_id,
+            "indent": indent, "position": position,
+        }
     return None, None
 
 def __live_item_key(liveitem):
@@ -89,6 +107,8 @@ def __live_item_key(liveitem):
         return ("Page", getattr(liveitem, "page_url", None))
     if itemtype == "Quiz":
         return ("Quiz", getattr(liveitem, "content_id", None))
+    if itemtype == "Assignment":
+        return ("Assignment", getattr(liveitem, "content_id", None))
     return (itemtype, getattr(liveitem, "id", None))
 
 def __live_item_matches_desired(liveitem, desired):

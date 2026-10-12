@@ -31,9 +31,19 @@ def is_local_asset_url(url):
     to a specific section of another page (introduction.md#variables)
     is exactly the same kind of reference, but checking the raw url's
     own "extension" would see ".md#variables" -- not in the excluded
-    set -- and misclassify it as a real attachment to push."""
+    set -- and misclassify it as a real attachment to push.
+
+    .rubric.toml is checked as its own compound suffix, not via
+    os.path.splitext (which only strips ".toml", the last extension) --
+    a link to an assignment is exactly the same kind of reference as a
+    page/quiz link, never a transclusion, but ".toml" alone isn't in
+    the excluded extension set below. Confirmed live the hard way: this
+    gap had example.rubric.toml itself getting pushed as a raw Canvas
+    file attachment before this check was added (2026-10-12)."""
     parsed = urlparse(url)
     if parsed.netloc or parsed.scheme:
+        return False
+    if parsed.path.endswith(".rubric.toml"):
         return False
     _, ext = os.path.splitext(parsed.path)
     return ext not in ("", ".md", ".html")

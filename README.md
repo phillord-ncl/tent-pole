@@ -69,6 +69,7 @@ Task-oriented howtos, in `docs/`:
 - [Configure](docs/configure.md)
 - [Write a page](docs/write-a-page.md)
 - [Write a quiz](docs/write-a-quiz.md)
+- [Write an assessment](docs/write-an-assessment.md)
 - [Organise a module](docs/organise-a-module.md)
 - [Include code output in a page or quiz](docs/include-code.md)
 
@@ -201,6 +202,15 @@ embedding a pushed file/image/video into a page.
   access
 
 See [docs/write-a-quiz.md](docs/write-a-quiz.md).
+
+### rubric
+
+- `push <file>` -- create-or-update a Canvas assignment and its rubric
+  from a `.rubric.toml` file
+- `push --force <file>` -- push even if the assignment is published,
+  has real submissions, or its rubric already has recorded marks
+
+See [docs/write-an-assessment.md](docs/write-an-assessment.md).
 
 
 Pandoc Filters

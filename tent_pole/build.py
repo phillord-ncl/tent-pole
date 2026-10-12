@@ -16,7 +16,7 @@ from .doit_rules.generate_makefile import _kind as _script_kind
 ## alone, never to guess a stem from an arbitrary target.
 _KNOWN_SUFFIXES = (
     ".quiz.full.html", ".full.html", "_slidy.html", "_book.html", "_web.html",
-    ".html", ".pdf", ".tpp", ".tpq", ".tpf", ".test_out", ".out", ".crash", ".stout",
+    ".html", ".pdf", ".tpp", ".tpq", ".tpa", ".tpf", ".test_out", ".out", ".crash", ".stout",
 )
 
 
@@ -57,6 +57,8 @@ def _resolve_bare_name(name):
         return name
     if os.path.exists(name + ".quiz.md"):
         return name + ".tpq"
+    if os.path.exists(name + ".rubric.toml"):
+        return name + ".tpa"
     if os.path.exists(name + ".md"):
         return name + ".tpp"
     if os.path.exists(name + ".py"):
@@ -110,7 +112,8 @@ def run_build(argv):
          "`build` is passed straight through to doit itself -- a task "
          "name, a target file path (e.g. `introduction.tpp`), or just a "
          "source file's own stem (e.g. `introduction`, resolved to "
-         "introduction.tpp/.tpq/.out/.crash/.stout/.tpf as appropriate) "
+         "introduction.tpp/.tpq/.tpa/.out/.crash/.stout/.tpf as "
+         "appropriate) "
          "-- plus -n/-j/list/etc; with nothing given, doit's own "
          "default_tasks (\"pages\") runs.",
 )

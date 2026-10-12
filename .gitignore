@@ -16,6 +16,7 @@ dev/sample-course-*/**/*.tpp
 dev/sample-course-*/**/*.tpf
 dev/sample-course-*/**/*.tpd
 dev/sample-course-*/**/*.tpq
+dev/sample-course-*/**/*.tpa
 dev/sample-course-*/**/*.out
 dev/sample-course-*/**/*.stout
 dev/sample-course-*/**/*.crash
@@ -25,3 +26,10 @@ dev/sample-course-python/test-image.png
 dev/sample-course-python/test-video.mp4
 dev/sample-course-r/*.png
 dev/sample-course-r/tent-pole.toml.tpm
+
+## Same idea, for dev/sample-assessment/ -- not named sample-course-*
+## like the block above, so not covered by it.
+dev/sample-assessment/**/*.html
+dev/sample-assessment/**/*.tpp
+dev/sample-assessment/**/*.tpa
+dev/sample-assessment/**/*.tpf

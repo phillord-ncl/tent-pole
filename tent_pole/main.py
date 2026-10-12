@@ -15,6 +15,7 @@ from . import file
 from . import module
 from . import page
 from . import quiz
+from . import rubric
 from . import scaffold
 
 
@@ -85,6 +86,7 @@ main.add_command(file.file)
 main.add_command(module.module)
 main.add_command(page.page)
 main.add_command(quiz.quiz)
+main.add_command(rubric.rubric)
 
 def cli():
     """Console-script entry point (see pyproject.toml) -- Click's own

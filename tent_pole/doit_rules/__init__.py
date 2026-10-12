@@ -97,6 +97,12 @@ def task_quizzes():
     yield from _fan_out("quizzes")
 
 
+def task_rubrics():
+    """rubrics: $(RUBRIC_SOURCES:%.rubric.toml=%.tpa), plus fan-out."""
+    yield from core.task_rubric_push()
+    yield from _fan_out("rubrics")
+
+
 def task_full():
     """full: $(MD_SOURCES:%.md=%.full.html), plus fan-out -- no Canvas
     access at all, matching make's own "full" goal."""

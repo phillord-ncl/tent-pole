@@ -26,6 +26,14 @@ def test_is_local_asset_url_false_for_md_or_html_page_reference():
     assert deps_filter.is_local_asset_url("introduction.html") is False
 
 
+def test_is_local_asset_url_false_for_rubric_toml_reference():
+    """Regression test: ".toml" isn't in the excluded extension set, so
+    os.path.splitext alone would misclassify a link to an assignment
+    as a real file attachment -- confirmed live, see rubric.py/
+    canvas_filter.py's own .rubric.toml link handling."""
+    assert deps_filter.is_local_asset_url("example.rubric.toml") is False
+
+
 def test_is_local_asset_url_true_for_a_real_attachment():
     assert deps_filter.is_local_asset_url("handout.pdf") is True
 

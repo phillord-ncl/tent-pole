@@ -15,6 +15,7 @@ from panflute import *
 
 from . import config
 from . import quiz_paths
+from . import rubric
 from .code_include_attrs import CodeIncludeAttrs
 from .spin_chunks import split_chunks
 
@@ -145,6 +146,17 @@ def link_filter(elem, doc):
         elem.url = (
             toml.load(tpq_path).get("html_url", path)
             if os.path.exists(tpq_path) else path
+        )
+        return elem
+
+    ## A link to an assignment: same reasoning and the same fallback as
+    ## the quiz branch above, via rubric push's own .tpa-recorded
+    ## html_url.
+    if path.endswith(".rubric.toml"):
+        tpa_path = rubric.__tpa_path(path)
+        elem.url = (
+            toml.load(tpa_path).get("html_url", path)
+            if os.path.exists(tpa_path) else path
         )
         return elem
 

@@ -1,0 +1,21 @@
+## Makes tent-pole target beta from any invocation, set now rather than
+## left to be added later -- this sample exists purely for offline
+## rubric/assessment design work and must never be able to resolve to
+## production even by accident. Do not comment this out.
+beta = true
+
+## test_api_url/test_api_key deliberately not set here -- they're the
+## same for every course repo, so they belong only in the global
+## ~/.config/tent-pole/tent-pole.toml, not duplicated per repo.
+##
+## Belt and braces on top of beta = true above: this sample targets the
+## personal sandbox course, never any real course, even on beta.
+[dev]
+test_course_id = "npl25 Personal Sandbox"
+
+[module]
+identifier = "Tent-Pole Sample Module"
+items = [
+      {id = "week"},
+      {id = "example.rubric.toml", type = "Assignment", indent = 1},
+]

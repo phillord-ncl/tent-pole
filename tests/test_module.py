@@ -334,6 +334,48 @@ def test_reorder_quiz_item_errors_when_not_pushed_yet(monkeypatch, tmp_path):
     assert fake_module.create_module_item_calls == []
 
 
+def test_reorder_resolves_assignment_item_by_filename_via_tpa(monkeypatch, tmp_path):
+    """Matches how Quiz resolves by filename via .tpq rather than a raw
+    Canvas id -- same reasoning, via rubric push's .tpa stamp."""
+    rubric_toml = tmp_path / "exercise-2.rubric.toml"
+    with open(module.rubric.__tpa_path(str(rubric_toml)), "w") as fh:
+        toml.dump({"assignment_id": 777, "rubric_id": 1, "rubric_association_id": 1}, fh)
+
+    fake_module = FakeModule(id=1, name="Week 1", items=[])
+    fake_course = FakeCourseForModule(modules=[fake_module])
+    monkeypatch.setattr(module.course, "course_obj", lambda: fake_course)
+    monkeypatch.setattr(config, "config_module", lambda: "Week 1")
+    monkeypatch.setattr(config, "config_module_items",
+                         lambda: [{"type": "Assignment", "id": str(rubric_toml)}])
+
+    result = CliRunner().invoke(module.reorder, [])
+
+    assert result.exit_code == 0, result.output
+    assert fake_module.create_module_item_calls == [
+        {"type": "Assignment", "content_id": 777, "indent": "0", "position": 1}
+    ]
+
+
+def test_reorder_assignment_item_errors_when_not_pushed_yet(monkeypatch, tmp_path):
+    """No meaningful guessed content_id exists for an assignment the way
+    a page's canvasname is a meaningful guess -- errors clearly instead
+    of silently misaddressing a module item."""
+    rubric_toml = tmp_path / "not-pushed-yet.rubric.toml"
+
+    fake_module = FakeModule(id=1, name="Week 1", items=[])
+    fake_course = FakeCourseForModule(modules=[fake_module])
+    monkeypatch.setattr(module.course, "course_obj", lambda: fake_course)
+    monkeypatch.setattr(config, "config_module", lambda: "Week 1")
+    monkeypatch.setattr(config, "config_module_items",
+                         lambda: [{"type": "Assignment", "id": str(rubric_toml)}])
+
+    result = CliRunner().invoke(module.reorder, [])
+
+    assert result.exit_code != 0
+    assert "run rubric push first" in result.output
+    assert fake_module.create_module_item_calls == []
+
+
 ## dump -- resolved module state as TOML, for the tent-pole.toml.tpm
 ## staleness stamp.
 
