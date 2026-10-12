@@ -127,15 +127,6 @@ all.
   `.rubric.toml` filename (`{type="Assignment", id="example.rubric.toml"}`),
   resolved via the assessment's own `.tpa`.
 
-## Still open
-
-Whether Canvas rejects a per-student mark's `points` when it doesn't
-match any of a criterion's predefined ratings; anonymous- and
-moderated-grading interactions with a rubric assessment. See
-`assessment-marking-api.md` (tent-pole repo container directory, not
-this course repo) for the fuller write-up -- marking itself is
-deliberately a separate tool, not part of tent-pole.
-
 ## Not supported yet
 
 Real per-criterion/per-rating identity against Canvas's own ids (see
