@@ -162,6 +162,42 @@ def test_unreferenced_ignores_course_directories(tmp_path):
     assert check.unreferenced(str(tmp_path)) == []
 
 
+## points_drift
+
+def test_points_drift_flags_mismatched_total(tmp_path):
+    (tmp_path / "exercise.rubric.toml").write_text(toml.dumps({
+        "assignment": {"title": "Exercise", "points_possible": 10},
+        "criteria": [{"description": "Correctness", "points": 6}],
+    }))
+
+    findings = check.points_drift(str(tmp_path))
+
+    assert len(findings) == 1
+    assert "points_possible=10" in findings[0]
+    assert "criteria total=6" in findings[0]
+
+
+def test_points_drift_passes_when_totals_match(tmp_path):
+    (tmp_path / "exercise.rubric.toml").write_text(toml.dumps({
+        "assignment": {"title": "Exercise", "points_possible": 10},
+        "criteria": [
+            {"description": "Correctness", "points": 6},
+            {"description": "Style", "points": 4},
+        ],
+    }))
+
+    assert check.points_drift(str(tmp_path)) == []
+
+
+def test_points_drift_skips_when_points_possible_unset(tmp_path):
+    (tmp_path / "exercise.rubric.toml").write_text(toml.dumps({
+        "assignment": {"title": "Exercise"},
+        "criteria": [{"description": "Correctness", "points": 6}],
+    }))
+
+    assert check.points_drift(str(tmp_path)) == []
+
+
 ## CLI
 
 def test_check_cli_reports_without_failing(tmp_path, monkeypatch):
@@ -234,6 +270,10 @@ def test_check_cli_all_alias_runs_every_linter(tmp_path, monkeypatch):
     (wk2 / "exercises.md").write_text("# Exercises\n")
     (wk1 / "exercises.tpp").write_text(toml.dumps({"url": "exercises"}))
     (wk2 / "exercises.tpp").write_text(toml.dumps({"url": "exercises"}))
+    (tmp_path / "exercise.rubric.toml").write_text(toml.dumps({
+        "assignment": {"title": "Exercise", "points_possible": 10},
+        "criteria": [{"description": "Correctness", "points": 6}],
+    }))
     monkeypatch.chdir(tmp_path)
 
     result = CliRunner().invoke(check.check, ["all"])
@@ -242,6 +282,7 @@ def test_check_cli_all_alias_runs_every_linter(tmp_path, monkeypatch):
     assert "[name-collision]" in result.output
     assert "[stamp-collision]" in result.output
     assert "[unreferenced]" in result.output
+    assert "[points-drift]" in result.output
 
 
 def test_check_cli_build_alias_runs_only_name_collision(tmp_path, monkeypatch):

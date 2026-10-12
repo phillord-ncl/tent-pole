@@ -21,7 +21,9 @@ published = false
 there (so write it, and preview it, exactly like any other page; see
 [write a page](write-a-page.md)). `points_possible` should equal the
 sum of every criterion's own `points` below -- that's the total a
-student sees.
+student sees. `tent-pole check points-drift` catches it if the two
+ever disagree (run it alongside the other linters -- see `tent-pole
+check --help`).
 
 ## 2. The rubric's criteria
 
@@ -127,11 +129,5 @@ all.
   `.rubric.toml` filename (`{type="Assignment", id="example.rubric.toml"}`),
   resolved via the assessment's own `.tpa`.
 
-## Not supported yet
-
-Real per-criterion/per-rating identity against Canvas's own ids (see
-"2. The rubric's criteria" above), and a points-possible drift check
-between `[assignment] points_possible` and the criteria total --
-nothing currently warns if the two disagree.
 `dev/sample-assessment/example.rubric.toml` in the tent-pole checkout
 is a complete, working example of everything above.

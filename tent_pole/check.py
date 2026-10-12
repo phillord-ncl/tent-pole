@@ -137,10 +137,37 @@ def unreferenced(root="."):
     return findings
 
 
+def points_drift(root="."):
+    """A .rubric.toml whose [assignment] points_possible doesn't match
+    the sum of its own [[criteria]] points -- purely a local-file
+    check, computed from what's on disk alone, the same as
+    name_collision. Nothing else currently warns if the two disagree
+    (see docs/write-an-assessment.md)."""
+    findings = []
+    for toml_path in sorted(
+        glob.glob(os.path.join(root, "**", "*.rubric.toml"), recursive=True)
+    ):
+        with open(toml_path) as fh:
+            data = toml.load(fh)
+        assignment = data.get("assignment", {})
+        points_possible = assignment.get("points_possible")
+        if points_possible is None:
+            continue
+        criteria_total = sum(c.get("points", 0) for c in data.get("criteria", []))
+        if points_possible != criteria_total:
+            findings.append(
+                "{}: [assignment] points_possible={} but criteria total={}".format(
+                    toml_path, points_possible, criteria_total
+                )
+            )
+    return findings
+
+
 LINTERS = {
     "name-collision": name_collision,
     "stamp-collision": stamp_collision,
     "unreferenced": unreferenced,
+    "points-drift": points_drift,
 }
 
 ## "build": only name-collision needs no prior push state at all, so
@@ -164,12 +191,14 @@ def _resolve(names):
 
 @click.command(help="Run static checks for common authoring mistakes: "
                      "page/file name collisions (name-collision, "
-                     "stamp-collision) and pages missing from their own "
-                     "module's item list (unreferenced). 'all' runs every "
-                     "linter; 'build' runs the subset safe to wire into a "
-                     "build (currently just name-collision). Always run "
-                     "from the course root -- these walk the whole tree, "
-                     "not just the current directory.")
+                     "stamp-collision), pages missing from their own "
+                     "module's item list (unreferenced), and an "
+                     "assignment/rubric points mismatch (points-drift). "
+                     "'all' runs every linter; 'build' runs the subset "
+                     "safe to wire into a build (currently just "
+                     "name-collision). Always run from the course root -- "
+                     "these walk the whole tree, not just the current "
+                     "directory.")
 @click.argument("linters", nargs=-1, required=True,
                  type=click.Choice(sorted(LINTERS) + sorted(ALIASES)))
 @click.option("--strict", is_flag=True, help="Exit non-zero if any "
