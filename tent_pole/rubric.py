@@ -23,7 +23,12 @@ def __tpa_path(filename):
     return os.path.splitext(filename)[0] + ".tpa"
 
 
-def __load_rubric_toml(filename):
+def load_rubric_toml(filename):
+    """The parsed [assignment]/[[criteria]] structure of a .rubric.toml --
+    public (unlike every other helper in this module) because other
+    tools (tent-arbiter, tent-peg) need read-only access to a rubric's
+    own criteria/points without pushing anything, e.g. to check a local
+    marking script stays consistent with what's defined here."""
     with open(filename) as fh:
         return toml.load(fh)
 
@@ -194,7 +199,7 @@ def rubric():
               "already has recorded assessments -- this can orphan "
               "marking-linked data.")
 def push(filename, force):
-    parsed = __load_rubric_toml(filename)
+    parsed = load_rubric_toml(filename)
     assignment = parsed["assignment"]
     criteria = parsed.get("criteria", [])
     rubric_settings = parsed.get("rubric", {})
