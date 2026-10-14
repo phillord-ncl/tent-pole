@@ -1,5 +1,30 @@
 # Releases
 
+## 0.7.0
+
+- Added `tent-pole rubric push`, which creates or updates an assignment
+  and its marking rubric on Canvas from a `.rubric.toml`. See
+  [docs/write-an-assessment.md](write-an-assessment.md).
+- Added `tent-pole check`, static checks for common authoring mistakes:
+  page/file name collisions, pages missing from their module's item
+  list, and an assignment/rubric points mismatch (`points-drift`).
+  `--strict` exits non-zero on any finding, so a check can gate a build.
+- Added Java support: `output=` and Canvas folder support for `.java`
+  sources, and a Java runtime error is shown in the output.
+- Added R support: `chunk=`/`plot=` attributes in the filters, `spin()`
+  style chunk boundaries, and R sources in the doit build rules.
+- Added `chunk=` for Python, as a display-only attribute.
+- Added `rubric.toml` loading as a public function
+  (`tent_pole.rubric.load_rubric_toml`), used by `tent-arbiter`.
+- Fixed: an explicit false value (`compile-fail=false`) for an include
+  attribute was treated as true.
+- Fixed: `file push` resolved its Canvas folder from the current
+  directory rather than the course's git root, so two modules with
+  same-shaped subpaths collided on Canvas.
+- Fixed: `page push` refuses an unrecognised page, and a `crash=true`
+  source that fails to compile is rejected.
+- Renamed `dev/sample-course` to `dev/sample-course-python`.
+
 ## 0.6.0
 
 - Added `tent-pole build`, a [doit](https://pydoit.org/)-based
