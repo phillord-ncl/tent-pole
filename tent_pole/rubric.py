@@ -26,7 +26,7 @@ def __tpa_path(filename):
 def load_rubric_toml(filename):
     """The parsed [assignment]/[[criteria]] structure of a .rubric.toml --
     public (unlike every other helper in this module) because other
-    tools (tent-arbiter, tent-peg) need read-only access to a rubric's
+    tools (arbiter, tent-peg) need read-only access to a rubric's
     own criteria/points without pushing anything, e.g. to check a local
     marking script stays consistent with what's defined here."""
     with open(filename) as fh:
