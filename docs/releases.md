@@ -1,5 +1,9 @@
 # Releases
 
+## 0.7.1
+
+- Python 3.12 or later is now enough; 3.14 was required before.
+
 ## 0.7.0
 
 - Added `tent-pole rubric push`, which creates or updates an assignment
