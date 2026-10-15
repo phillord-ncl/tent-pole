@@ -1,6 +1,6 @@
 # Install tent-pole
 
-Requirements: Python >= 3.14. Optional: Pandoc, for the filters.
+Requirements: Python >= 3.12. Optional: Pandoc, for the filters.
 `tent-pole build` (for building a whole course) needs nothing extra --
 it's built on [doit](https://pydoit.org/), a regular Python
 dependency installed alongside tent-pole itself.

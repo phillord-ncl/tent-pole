@@ -19,7 +19,7 @@ alongside its content to extend it. HTML generation is done by pandoc,
 with tent-pole supplied filters to support code inclusion. The
 organisation of pages into canvas modules uses TOML configuration.
 
-Requirements: Python >= 3.14.
+Requirements: Python >= 3.12.
 Optional: Pandoc, if using the filters.
 
 
