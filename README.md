@@ -22,6 +22,15 @@ organisation of pages into canvas modules uses TOML configuration.
 Requirements: Python >= 3.12.
 Optional: Pandoc, if using the filters.
 
+Tent-pole is part of the tent-tools suite. See also:
+
+- [tent-peg](https://github.com/phillord-ncl/tent-peg) -- download the
+  submissions you are marking from Canvas, and push marks back
+- [arbiter](https://github.com/phillord-ncl/arbiter) -- mark programming
+  assignments
+- [tent-pack](https://github.com/phillord-ncl/tent-pack) -- check student
+  coursework and pack it into a zip for upload
+
 
 Installation
 ------------
